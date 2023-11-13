@@ -4,40 +4,46 @@
 
 char *create(char *filename)
 {
-    return strcat(strcat("Creating the file ",filename),"\n");
+    printf("Creating file %s\n", filename);
+    return "Creating the file ";
 }
 
-char *delete (char *filename)
+char *delete(char *filename)
 {
-    return strcat(strcat("Deleting the file ",filename),"\n");
+
+    printf("Deleting file %s\n", filename);
+    return "Deleting the file";
 }
 
 char *read(char *filename)
 {
-    return strcat(strcat("Reading the file ",filename),"\n");
+    printf("Reading file %s\n", filename);
+    return "Reading the file";
 }
 
 char *write(char *filename, char *data)
 {
-    return strcat(strcat("Writing to the file ", filename),"\n");
+    printf("Writing to file %s\n", filename);
+    return "Writing to the file";
 }
 
 char *copy(char *filename1, char *filename2)
 {
-    return "Copying the files\n";
+    printf("Copying file %s to %s\n", filename1, filename2);
+    return "Copying the file";
 }
 
 char *get_info(char *filename)
 {
-    return strcat(strcat("Getting info for the file ", filename ),"\n");
+    printf("Getting info of file %s\n", filename);
+    return "Getting info of the file";
 }
 
 char *LS(char *filename)
 {
-    return strcat(strcat("Listing the files in the directory ",filename),"\n");
+    printf("Listing files in directory %s\n", filename);
+    return "Listing files in the directory";
 }
-
-
 
 char *operation_handler(char **inputs, int num_inputs)
 {
@@ -65,6 +71,7 @@ char *operation_handler(char **inputs, int num_inputs)
         }
         else
         {
+            printf("Encountered invalid operation\n");
             return "Invalid operation\n";
         }
     }
@@ -80,11 +87,13 @@ char *operation_handler(char **inputs, int num_inputs)
         }
         else
         {
+            printf("Encountered invalid Operation\n");
             return "Invalid operation\n";
         }
     }
     else
     {
+        printf("Encountered invalid Operation\n");
         return "Invalid operation\n";
     }
 }

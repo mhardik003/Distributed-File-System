@@ -6,7 +6,6 @@
 #include <netinet/in.h>
 #include "utils.h"
 
-
 #define SERVER_PORT 8080
 
 int createServerSocket()
@@ -59,13 +58,17 @@ void sendMessage(int socket, char *message)
 char *parseInput(char *input)
 {
     // array to store tokens
-    printf("Now parsing the input!\n");
     char **tokens = malloc(10 * sizeof(char *));
+
+    for (int i = 0; i < 10; i++)
+    {
+        tokens[i] = malloc(100 * sizeof(char));
+    }
     int i = 0;
     char *token = strtok(input, " ");
     while (token != NULL)
     {
-        printf("%s\n", token);
+        // printf("%s\n", token);
         // store token in tokens array
         tokens[i++] = token;
         token = strtok(NULL, " ");
@@ -75,10 +78,13 @@ char *parseInput(char *input)
 
 char *readMessage(int sock)
 {
-    printf("Now reading the message\n");
+    // printf("Now reading the message\n");
     char buffer[1024] = {0};
-    read(sock, buffer, 1024);
-    printf("%s", buffer);
+    if (recv(sock, buffer, 1024, 0) < 0)
+    {
+        return "Error in receiving the message";
+    }
+    printf("Message received : %s", buffer);
     return parseInput(buffer);
 }
 
@@ -100,8 +106,9 @@ int main()
         new_socket = acceptConnection(server_fd, &address);
         while (1)
         {
-            char *response;
+            char response[256];
             strcpy(response, readMessage(new_socket));
+            printf("Sending the response as %s\n", response);
             sendMessage(new_socket, response);
         }
         close(new_socket);
