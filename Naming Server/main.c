@@ -4,6 +4,8 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include "utils.h"
+
 
 #define SERVER_PORT 8080
 
@@ -57,6 +59,7 @@ void sendMessage(int socket, char *message)
 char *parseInput(char *input)
 {
     // array to store tokens
+    printf("Now parsing the input!\n");
     char **tokens = malloc(10 * sizeof(char *));
     int i = 0;
     char *token = strtok(input, " ");
@@ -70,8 +73,9 @@ char *parseInput(char *input)
     return operation_handler(tokens, i);
 }
 
-void readMessage(int sock)
+char *readMessage(int sock)
 {
+    printf("Now reading the message\n");
     char buffer[1024] = {0};
     read(sock, buffer, 1024);
     printf("%s", buffer);

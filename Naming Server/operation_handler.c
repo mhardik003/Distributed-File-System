@@ -1,36 +1,40 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 char *create(char *filename)
 {
-    return "Creating the file"+" "+filename+"\n";
+    return strcat(strcat("Creating the file ",filename),"\n");
 }
 
 char *delete (char *filename)
 {
-    return "Deleting the file"+" "+filename+"\n";
+    return strcat(strcat("Deleting the file ",filename),"\n");
 }
 
 char *read(char *filename)
 {
-    return "Reading the file"+" "+filename+"\n";
+    return strcat(strcat("Reading the file ",filename),"\n");
 }
 
 char *write(char *filename, char *data)
 {
-    return "Writing to the file"+" "+filename+"\n";
+    return strcat(strcat("Writing to the file ", filename),"\n");
 }
 
 char *copy(char *filename1, char *filename2)
 {
-    return "Copying the file"+" "+filename1+" "+"to"+" "+filename2+"\n";
+    return "Copying the files\n";
 }
 
 char *get_info(char *filename)
 {
-    return "Getting info of the file"+" "+filename+"\n";
+    return strcat(strcat("Getting info for the file ", filename ),"\n");
 }
 
 char *LS(char *filename)
 {
-    return "Listing the files in the directory"+" "+filename+"\n";
+    return strcat(strcat("Listing the files in the directory ",filename),"\n");
 }
 
 
@@ -51,11 +55,11 @@ char *operation_handler(char **inputs, int num_inputs)
         {
             return read(inputs[1]);
         }
-        else if ((strcmp(inupts[0]), "GETINFO") == 0)
+        else if (strcmp(inputs[0], "GETINFO") == 0)
         {
             return get_info(inputs[1]);
         }
-        else if ((strcmp(inputs[0]), "LS") == 0)
+        else if (strcmp(inputs[0], "LS") == 0)
         {
             return LS(inputs[1]);
         }
@@ -64,7 +68,7 @@ char *operation_handler(char **inputs, int num_inputs)
             return "Invalid operation\n";
         }
     }
-    else if (num_input == 3)
+    else if (num_inputs == 3)
     {
         if (strcmp(inputs[0], "WRITE") == 0)
         {
