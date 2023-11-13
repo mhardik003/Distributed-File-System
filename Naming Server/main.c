@@ -48,7 +48,7 @@ void sendMessage(int socket, char *message) {
 void readMessage(int sock) {
     char buffer[1024] = {0};
     read(sock, buffer, 1024);
-    printf("%s\n", buffer);
+    printf("%s", buffer);
 }
 
 int main() {
@@ -63,13 +63,16 @@ int main() {
     bindServerSocket(server_fd, &address);
     startListening(server_fd);
 
-    new_socket = acceptConnection(server_fd, &address);
-    readMessage(new_socket);
-    char *message = "hello from the name server!";
-    sendMessage(new_socket, message);
+    while(1) {
+        new_socket = acceptConnection(server_fd, &address);
+        while(1) {
+            readMessage(new_socket);
+            char *confirmationMsg = "Displayed!";
+            sendMessage(new_socket, confirmationMsg);
+        }
+        close(new_socket);
+    }
 
-    close(new_socket);
     close(server_fd);
-
     return 0;
 }

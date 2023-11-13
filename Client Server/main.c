@@ -62,9 +62,14 @@ int main() {
     inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr);
 
     connectToServer(sock, &serv_addr);
-    char *message = "hello from the client!";
-    sendMessage(sock, message);
-    readMessage(sock);
+
+    while(1) {
+        char message[1024];
+        printf("Enter your message: ");
+        fgets(message, 1024, stdin);
+        sendMessage(sock, message);
+        readMessage(sock); // Read confirmation message from server
+    }
 
     close(sock);
     return 0;
