@@ -45,6 +45,34 @@ void readMessage(int sock) {
     printf("%s\n", buffer);
 }
 
+void print_DFS_features() {
+    printf("_______________________________________________________________\n");
+    printf("\t\t\tWelcome to the DFS!\n");
+    printf("_______________________________________________________________\n");
+    printf("You can perform the following 7 operations:\n");
+
+    printf("1. Read a file\n");
+    printf("Syntax: READ <path>\n\n");
+
+    printf("2. Get information of a file\n");
+    printf("Syntax: GETINFO <path>\n\n");
+    
+    printf("3. Write to a file\n");
+    printf("Syntax: WRITE <path> <text>\n\n");
+
+    printf("4. Create a directory\n");
+    printf("Syntax: CREATE <path>\n\n");
+
+    printf("5. Delete a file or directory\n");
+    printf("Syntax: DELETE <path>\n\n");
+
+    printf("6. Display all files and folders in a folder\n");
+    printf("Syntax: LS <path>\n\n");
+
+    printf("7. Copy a file or directory to another filer or directory\n");
+    printf("Syntax: COPY <source path> <destination path>\n\n");
+}
+
 int main() {
     int sock;
     struct sockaddr_in serv_addr, cli_addr;
@@ -62,6 +90,7 @@ int main() {
     inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr);
 
     connectToServer(sock, &serv_addr);
+    print_DFS_features();
 
     while(1) {
         char message[1024];
