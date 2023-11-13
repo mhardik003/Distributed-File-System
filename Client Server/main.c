@@ -39,6 +39,8 @@ void connectToServer(int sock, struct sockaddr_in *serv_addr) {
     }
 }
 
+
+
 void readMessage(int sock) {
     char buffer[1024] = {0};
     read(sock, buffer, 1024);
