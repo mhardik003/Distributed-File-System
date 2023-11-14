@@ -1,48 +1,51 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#define GRN "\e[0;32m"
+#define RED "\e[0;31m"
+#define reset "\e[0m"
 
 char *create(char *filename)
 {
-    printf("Creating file %s\n", filename);
-    return "Creating the file ";
+    printf(GRN"Creating file %s"reset, filename);
+    return GRN"Creating the file "reset;
 }
 
 char *delete(char *filename)
 {
 
-    printf("Deleting file %s\n", filename);
-    return "Deleting the file";
+    printf(GRN"Deleting file %s"reset, filename);
+    return GRN"Deleting the file"reset;
 }
 
 char *read(char *filename)
 {
-    printf("Reading file %s\n", filename);
-    return "Reading the file";
+    printf(GRN"Reading file %s"reset, filename);
+    return GRN"Reading the file"reset;
 }
 
 char *write(char *filename, char *data)
 {
-    printf("Writing to file %s\n", filename);
-    return "Writing to the file";
+    printf(GRN"Writing to file %s"reset, filename);
+    return GRN"Writing to the file"reset;
 }
 
 char *copy(char *filename1, char *filename2)
 {
-    printf("Copying file %s to %s\n", filename1, filename2);
-    return "Copying the file";
+    printf(GRN"Copying file %s to %s"reset, filename1, filename2);
+    return GRN"Copying the file"reset;
 }
 
 char *get_info(char *filename)
 {
-    printf("Getting info of file %s\n", filename);
-    return "Getting info of the file";
+    printf(GRN"Getting info of file %s"reset, filename);
+    return GRN"Getting info of the file"reset;
 }
 
 char *LS(char *filename)
 {
-    printf("Listing files in directory %s\n", filename);
-    return "Listing files in the directory";
+    printf(GRN"Listing files in directory %s"reset, filename);
+    return GRN"Listing files in the directory"reset;
 }
 
 char *operation_handler(char **inputs, int num_inputs)
@@ -71,8 +74,8 @@ char *operation_handler(char **inputs, int num_inputs)
         }
         else
         {
-            printf("Encountered invalid operation\n");
-            return "Invalid operation\n";
+            printf(RED"Encountered invalid operation\n"reset);
+            return RED"Invalid operation"reset;
         }
     }
     else if (num_inputs == 3)
@@ -87,13 +90,13 @@ char *operation_handler(char **inputs, int num_inputs)
         }
         else
         {
-            printf("Encountered invalid Operation\n");
-            return "Invalid operation\n";
+            printf(RED"Encountered invalid Operation\n"reset);
+            return RED"Invalid operation"reset;
         }
     }
     else
     {
-        printf("Encountered invalid Operation\n");
-        return "Invalid operation\n";
+        printf(RED"Encountered invalid Operation\n"reset);
+        return RED"Invalid operation"reset;
     }
 }
