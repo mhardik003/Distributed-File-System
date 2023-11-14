@@ -5,6 +5,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include "utils.h"
+#include "Utils/hashmap.h"
 
 #define SERVER_PORT 8080
 
@@ -96,6 +97,9 @@ int main()
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons(SERVER_PORT);
+
+    // Create Lookup Hashmap for the accessible paths
+    hashmap *accesible_paths_ip_lookup = create_hashmap(1000);
 
     server_fd = createServerSocket();
     bindServerSocket(server_fd, &address);
