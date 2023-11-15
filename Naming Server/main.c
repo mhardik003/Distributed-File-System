@@ -6,6 +6,7 @@
 #include <netinet/in.h>
 #include "utils.h"
 #include "Utils/hashmap.h"
+#include <pthread.h>
 
 #define NM_Client_PORT 8080 // port for naming server's communication with the client
 #define NM_SS_PORT 8081 // port for naming server's communication with the storage server
@@ -78,7 +79,7 @@ char *parseInput(char *input)
     return operation_handler(tokens, i);
 }
 
-char *readMessage(int sock)
+char *readClientMessage(int sock)
 {
     // printf("Now reading the message\n");
     char buffer[1024] = {0};
@@ -86,16 +87,53 @@ char *readMessage(int sock)
     {
         return "Error in receiving the message";
     }
-    printf("Message received : %s", buffer);
+    printf("Message received by Client : %s", buffer);
     return parseInput(buffer);
 }
 
-int main()
+char *readStorageServerMessage(int sock)
 {
-    int NM_client_fd, NM_SS_fd, new_socket;
-    struct sockaddr_in NM_client_address;
-    struct sockaddr_in NM_SS_address;
+    // printf("Now reading the message\n");
+    char buffer[1024] = {0};
+    if (recv(sock, buffer, 1024, 0) < 0)
+    {
+        return "Error in receiving the message";
+    }
+    printf("Message received by SS : %s", buffer);
+    return "Hey SS, how are you? -NM";
+}
 
+void *handleClientConnection(void *socket_desc) {
+    int sock = *(int*)socket_desc;
+    free(socket_desc);
+
+    while(1) {
+        char *message = readClientMessage(sock);
+        sendMessage(sock, message);
+    }
+
+    close(sock);
+    return NULL;
+}
+
+void *handleStorageServerConnection(void *socket_desc) {
+    int sock = *(int*)socket_desc;
+    free(socket_desc);
+
+    while(1) {
+        char *message = readStorageServerMessage(sock);
+        sendMessage(sock, message);
+    }
+
+    close(sock);
+    return NULL;
+}
+
+int main() {
+    int NM_client_fd, NM_SS_fd;
+    struct sockaddr_in NM_client_address, NM_SS_address;
+
+    // Address setup for both ports
     NM_client_address.sin_family = AF_INET;
     NM_client_address.sin_addr.s_addr = INADDR_ANY;
     NM_client_address.sin_port = htons(NM_Client_PORT);
@@ -104,32 +142,39 @@ int main()
     NM_SS_address.sin_addr.s_addr = INADDR_ANY;
     NM_SS_address.sin_port = htons(NM_SS_PORT);
 
-    // Create Lookup Hashmap for the accessible paths
-    hashmap *accesible_paths_ip_lookup = create_hashmap(1000);
+    // Hashmap creation
+    hashmap *accessible_paths_ip_lookup = create_hashmap(1000);
 
+    // Socket creation and binding
     NM_client_fd = createServerSocket();
     NM_SS_fd = createServerSocket();
 
     bindServerSocket(NM_client_fd, &NM_client_address);
     bindServerSocket(NM_SS_fd, &NM_SS_address);
 
+    // Start listening on both ports
     startListening(NM_client_fd);
     startListening(NM_SS_fd);
 
-    while (1)
-    {
-        new_socket = acceptConnection(NM_SS_fd, &NM_SS_address);
-        while (1)
-        {
-            char response[256];
-            strcpy(response, readMessage(new_socket));
-            printf("Sending the response as %s\n", response);
-            sendMessage(new_socket, response);
+    pthread_t thread_id;
+
+    while (1) {
+        struct sockaddr_in address;
+        int *new_sock = malloc(sizeof(int));
+        *new_sock = acceptConnection(NM_client_fd, &address);
+        if (*new_sock >= 0) {
+            pthread_create(&thread_id, NULL, handleClientConnection, (void*) new_sock);
         }
-        close(new_socket);
+
+        new_sock = malloc(sizeof(int));
+        *new_sock = acceptConnection(NM_SS_fd, &address);
+        if (*new_sock >= 0) {
+            pthread_create(&thread_id, NULL, handleStorageServerConnection, (void*) new_sock);
+        }
     }
 
-    close(NM_SS_fd);
+    // Cleanup
+    close(NM_client_fd);
     close(NM_SS_fd);
     return 0;
 }
