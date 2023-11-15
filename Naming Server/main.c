@@ -107,8 +107,11 @@ void *handleClientConnection(void *socket_desc) {
     int sock = *(int*)socket_desc;
     free(socket_desc);
 
-    while(1) {
+    while (1) {
         char *message = readClientMessage(sock);
+        if (message == NULL || strcmp(message, "QUIT") == 0) {
+            break;
+        }
         sendMessage(sock, message);
     }
 
@@ -120,12 +123,45 @@ void *handleStorageServerConnection(void *socket_desc) {
     int sock = *(int*)socket_desc;
     free(socket_desc);
 
-    while(1) {
+    while (1) {
         char *message = readStorageServerMessage(sock);
+        if (message == NULL || strcmp(message, "QUIT") == 0) {
+            break;
+        }
         sendMessage(sock, message);
     }
 
     close(sock);
+    return NULL;
+}
+
+
+void *listenForClients(void *arg) {
+    int server_fd = *(int *)arg;
+    while (1) {
+        struct sockaddr_in address;
+        int *new_sock = malloc(sizeof(int));
+        *new_sock = acceptConnection(server_fd, &address);
+        if (*new_sock >= 0) {
+            pthread_t thread_id;
+            pthread_create(&thread_id, NULL, handleClientConnection, (void*) new_sock);
+        }
+    }
+    return NULL;
+}
+
+void *listenForStorageServers(void *arg) {
+    int server_fd = *(int *)arg;
+    while (1) {
+        struct sockaddr_in address;
+        int *new_sock = malloc(sizeof(int));
+        *new_sock = acceptConnection(server_fd, &address);
+        if (*new_sock >= 0) {
+            pthread_t thread_id;
+            pthread_create(&thread_id, NULL, handleStorageServerConnection, (void*) new_sock);
+        }
+    }
+    printf("stopped listening");
     return NULL;
 }
 
@@ -156,22 +192,14 @@ int main() {
     startListening(NM_client_fd);
     startListening(NM_SS_fd);
 
-    pthread_t thread_id;
+    pthread_t client_thread, ss_thread;
 
-    while (1) {
-        struct sockaddr_in address;
-        int *new_sock = malloc(sizeof(int));
-        *new_sock = acceptConnection(NM_client_fd, &address);
-        if (*new_sock >= 0) {
-            pthread_create(&thread_id, NULL, handleClientConnection, (void*) new_sock);
-        }
+    pthread_create(&client_thread, NULL, listenForClients, (void *)&NM_client_fd);
+    pthread_create(&ss_thread, NULL, listenForStorageServers, (void *)&NM_SS_fd);
 
-        new_sock = malloc(sizeof(int));
-        *new_sock = acceptConnection(NM_SS_fd, &address);
-        if (*new_sock >= 0) {
-            pthread_create(&thread_id, NULL, handleStorageServerConnection, (void*) new_sock);
-        }
-    }
+    // Join threads (optional, depending on your shutdown strategy)
+    pthread_join(client_thread, NULL);
+    pthread_join(ss_thread, NULL);
 
     // Cleanup
     close(NM_client_fd);
