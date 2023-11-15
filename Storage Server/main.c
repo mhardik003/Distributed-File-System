@@ -7,6 +7,11 @@
 #include <arpa/inet.h>
 #include <errno.h>
 
+#include "Utils/get_accessible_paths.h"
+
+#define CYN "\e[0;36m"
+#define reset "\e[0m"
+
 #define SERVER_PORT 8081
 int START_PORT = 5000;
 int SS_NM_PORT;
@@ -106,6 +111,38 @@ int main() {
     sock = createSSSocket();
     bindSSSocket(sock, &ss_addr);
 
+    // for getting accessible paths
+    char path[MAX_PATH_LENGTH];
+    char *allPaths = malloc(MAX_TOTAL_LENGTH);
+    char *allPathsCopy = malloc(MAX_TOTAL_LENGTH);
+    char *selectedPaths = malloc(MAX_TOTAL_LENGTH);
+    char *firstMessageToNM = malloc(MAX_TOTAL_LENGTH);
+
+    allPaths[0] = '\0';
+    int length = 0;
+
+    if (getcwd(path, sizeof(path)) == NULL) {
+        perror("getcwd() error");
+        free(allPaths);
+        return 1;
+    }
+
+    listFilesRecursively(path, &allPaths, &length);
+    strcpy(allPathsCopy, allPaths);
+
+    char *token = strtok(allPaths, "\n");
+    int index = 1;
+    while (token != NULL) {
+        printf("%d %s\n", index++, token);
+        token = strtok(NULL, "\n");
+    }
+
+    strcpy(allPaths, allPathsCopy);
+    getSelectedPaths(allPaths, selectedPaths);
+
+    snprintf(firstMessageToNM, MAX_TOTAL_LENGTH, "ssinit\n%d %d\n", SS_NM_PORT, SS_Client_PORT);
+    strcat(firstMessageToNM, selectedPaths);
+
     printf("Enter the IP address of the Naming Server: ");
     fgets(server_ip, sizeof(server_ip), stdin);
     server_ip[strcspn(server_ip, "\n")] = 0; // Remove newline character if present
@@ -120,10 +157,13 @@ int main() {
     }
 
     connectToServer(sock, &serv_addr);
+    sendMessage(sock, firstMessageToNM);
+    printf("Sent initialization message to naming server!\n");
+    readMessage(sock); // Read confirmation message from server
 
     while(1) {
         char message[1024];
-        printf("Enter your message: ");
+        printf(CYN"Enter Message: "reset);
         fgets(message, 1024, stdin);
         message[strcspn(message, "\n")] = 0; // Remove newline character if present
         sendMessage(sock, message);
