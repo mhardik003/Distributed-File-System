@@ -7,7 +7,7 @@
 #include <arpa/inet.h>
 
 #define SERVER_PORT 8080
-#define CLIENT_PORT 8081
+#define CLIENT_NM_PORT 8082
 
 int createClientSocket() {
     int sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -79,7 +79,7 @@ int main() {
 
     cli_addr.sin_family = AF_INET;
     cli_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    cli_addr.sin_port = htons(CLIENT_PORT);
+    cli_addr.sin_port = htons(CLIENT_NM_PORT);
 
     sock = createClientSocket();
     bindClientSocket(sock, &cli_addr);

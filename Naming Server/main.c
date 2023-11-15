@@ -7,7 +7,8 @@
 #include "utils.h"
 #include "Utils/hashmap.h"
 
-#define SERVER_PORT 8080
+#define NM_Client_PORT 8080 // port for naming server's communication with the client
+#define NM_SS_PORT 8081 // port for naming server's communication with the storage server
 
 int createServerSocket()
 {
@@ -91,23 +92,33 @@ char *readMessage(int sock)
 
 int main()
 {
-    int server_fd, new_socket;
-    struct sockaddr_in address;
+    int NM_client_fd, NM_SS_fd, new_socket;
+    struct sockaddr_in NM_client_address;
+    struct sockaddr_in NM_SS_address;
 
-    address.sin_family = AF_INET;
-    address.sin_addr.s_addr = INADDR_ANY;
-    address.sin_port = htons(SERVER_PORT);
+    NM_client_address.sin_family = AF_INET;
+    NM_client_address.sin_addr.s_addr = INADDR_ANY;
+    NM_client_address.sin_port = htons(NM_Client_PORT);
+
+    NM_SS_address.sin_family = AF_INET;
+    NM_SS_address.sin_addr.s_addr = INADDR_ANY;
+    NM_SS_address.sin_port = htons(NM_SS_PORT);
 
     // Create Lookup Hashmap for the accessible paths
     hashmap *accesible_paths_ip_lookup = create_hashmap(1000);
 
-    server_fd = createServerSocket();
-    bindServerSocket(server_fd, &address);
-    startListening(server_fd);
+    NM_client_fd = createServerSocket();
+    NM_SS_fd = createServerSocket();
+
+    bindServerSocket(NM_client_fd, &NM_client_address);
+    bindServerSocket(NM_SS_fd, &NM_SS_address);
+
+    startListening(NM_client_fd);
+    startListening(NM_SS_fd);
 
     while (1)
     {
-        new_socket = acceptConnection(server_fd, &address);
+        new_socket = acceptConnection(NM_SS_fd, &NM_SS_address);
         while (1)
         {
             char response[256];
@@ -118,6 +129,7 @@ int main()
         close(new_socket);
     }
 
-    close(server_fd);
+    close(NM_SS_fd);
+    close(NM_SS_fd);
     return 0;
 }

@@ -6,10 +6,10 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#define SERVER_PORT 8080
-#define STORAGE_SERVER_PORT 8081 // add one more port open for SS to connect to the client laterß
+#define SERVER_PORT 8081
+#define SS_NM_PORT 8083
 
-int createClientSocket() {
+int createSSSocket() {
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock < 0) {
         perror("Socket creation error");
@@ -18,12 +18,17 @@ int createClientSocket() {
     return sock;
 }
 
-void bindClientSocket(int sock, struct sockaddr_in *cli_addr) {
-    if (bind(sock, (struct sockaddr *)cli_addr, sizeof(*cli_addr)) < 0) {
+void bindSSSocket(int sock, struct sockaddr_in *ss_addr) {
+    if (bind(sock, (struct sockaddr *)ss_addr, sizeof(*ss_addr)) < 0) {
         perror("bind failed");
         close(sock);
         exit(EXIT_FAILURE);
     }
+}
+
+void sendMessage(int socket, char *message) {
+    send(socket, message, strlen(message), 0);
+    printf("Message sent\n");
 }
 
 void connectToServer(int sock, struct sockaddr_in *serv_addr) {
@@ -34,7 +39,7 @@ void connectToServer(int sock, struct sockaddr_in *serv_addr) {
     }
 }
 
-void readServerMessage(int sock) {
+void readMessage(int sock) {
     char buffer[1024] = {0};
     read(sock, buffer, 1024);
     printf("%s\n", buffer);
@@ -42,14 +47,14 @@ void readServerMessage(int sock) {
 
 int main() {
     int sock;
-    struct sockaddr_in serv_addr, cli_addr;
+    struct sockaddr_in serv_addr, ss_addr;
 
-    cli_addr.sin_family = AF_INET;
-    cli_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    cli_addr.sin_port = htons(STORAGE_SERVER_PORT);
+    ss_addr.sin_family = AF_INET;
+    ss_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    ss_addr.sin_port = htons(SS_NM_PORT);
 
-    sock = createClientSocket();
-    bindClientSocket(sock, &cli_addr);
+    sock = createSSSocket();
+    bindSSSocket(sock, &ss_addr);
 
     memset(&serv_addr, 0, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
@@ -57,7 +62,14 @@ int main() {
     inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr);
 
     connectToServer(sock, &serv_addr);
-    readServerMessage(sock);
+
+    while(1) {
+        char message[1024];
+        printf("Enter your message: ");
+        fgets(message, 1024, stdin);
+        sendMessage(sock, message);
+        readMessage(sock); // Read confirmation message from server
+    }
 
     close(sock);
     return 0;
