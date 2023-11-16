@@ -1,174 +1,134 @@
-// ignore warnings, they are because of C++ malloc requirements which are not needed in C
 #ifndef HASHMAP_H
 #define HASHMAP_H
 
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
+#include <stdio.h>
 
-// Define the structure for a single hashmap entry
-typedef struct hashmap_entry {
-    char *key;
-    char *value;
-    struct hashmap_entry *next;
-} hashmap_entry;
-
-// Define the structure for the hashmap
+// Define the structure of the value
 typedef struct {
-    hashmap_entry **entries;
-    size_t size;
-} hashmap;
+    char* ip;
+    int nm_port;
+    int client_port;
+    int num_readers;
+    int isWriting;
+} ValueStruct;
 
-// Function prototypes
-hashmap *create_hashmap(size_t size);
-void free_hashmap(hashmap *map);
-bool hashmap_insert(hashmap *map, const char *key, const char *value);
-char *hashmap_get(hashmap *map, const char *key);
-bool hashmap_remove(hashmap *map, const char *key);
+typedef struct HashmapItem {
+    char* key;
+    ValueStruct value;
+    struct HashmapItem* next; // for handling collisions
+} HashmapItem;
 
-// Helper functions
-unsigned long hash_string(const char *str, size_t size);
-hashmap_entry *create_entry(const char *key, const char *value);
+#define HASH_MAP_SIZE 100
 
-// Function implementations
-hashmap *create_hashmap(size_t size) {
-    hashmap *map = malloc(sizeof(hashmap));
-    if (!map) return NULL;
+// Function Declarations
+void init_hashmap(HashmapItem* hashmap[]);
+void cleanup_hashmap(HashmapItem* hashmap[]);
+void insert(HashmapItem* hashmap[], const char* key, ValueStruct value);
+ValueStruct* find(HashmapItem* hashmap[], const char* key);
+void remove_key(HashmapItem* hashmap[], const char* key);
 
-    map->size = size;
-    map->entries = malloc(sizeof(hashmap_entry*) * size);
-    if (!map->entries) {
-        free(map);
-        return NULL;
+// Hash function
+unsigned int hash(const char* key) {
+    unsigned long int value = 0;
+    unsigned int i = 0;
+    unsigned int key_len = strlen(key);
+
+    for (; i < key_len; ++i) {
+        value = value * 37 + key[i];
     }
 
-    for (size_t i = 0; i < size; i++) {
-        map->entries[i] = NULL;
-    }
-
-    return map;
+    return value % HASH_MAP_SIZE;
 }
 
-void free_hashmap(hashmap *map) {
-    if (!map) return;
+// Initialize the hashmap
+void init_hashmap(HashmapItem* hashmap[]) {
+    for (int i = 0; i < HASH_MAP_SIZE; ++i) {
+        hashmap[i] = NULL;
+    }
+}
 
-    for (size_t i = 0; i < map->size; i++) {
-        hashmap_entry *entry = map->entries[i];
-        while (entry) {
-            hashmap_entry *temp = entry;
-            entry = entry->next;
+// Cleanup the hashmap
+void cleanup_hashmap(HashmapItem* hashmap[]) {
+    for (int i = 0; i < HASH_MAP_SIZE; ++i) {
+        HashmapItem* item = hashmap[i];
+        while (item != NULL) {
+            HashmapItem* temp = item;
+            item = item->next;
             free(temp->key);
-            free(temp->value);
             free(temp);
         }
     }
-
-    free(map->entries);
-    free(map);
 }
 
-bool hashmap_insert(hashmap *map, const char *key, const char *value) {
-    unsigned long index = hash_string(key, map->size);
-    hashmap_entry *new_entry = create_entry(key, value);
-
-    if (!new_entry) return false;
-
-    new_entry->next = map->entries[index];
-    map->entries[index] = new_entry;
-    return true;
+// Insert function
+void insert(HashmapItem* hashmap[], const char* key, ValueStruct value) {
+    unsigned int index = hash(key);
+    HashmapItem* newItem = (HashmapItem*) malloc(sizeof(HashmapItem));
+    newItem->key = strdup(key);
+    newItem->value = value;
+    newItem->next = hashmap[index];
+    hashmap[index] = newItem;
 }
 
-char *hashmap_get(hashmap *map, const char *key) {
-    unsigned long index = hash_string(key, map->size);
-    hashmap_entry *entry = map->entries[index];
-
-    while (entry) {
-        if (strcmp(entry->key, key) == 0) {
-            return entry->value;
+// Find function
+ValueStruct* find(HashmapItem* hashmap[], const char* key) {
+    unsigned int index = hash(key);
+    HashmapItem* item = hashmap[index];
+    while (item != NULL) {
+        if (strcmp(item->key, key) == 0) {
+            return &item->value;
         }
-        entry = entry->next;
+        item = item->next;
     }
-
     return NULL;
 }
 
-bool hashmap_remove(hashmap *map, const char *key) {
-    unsigned long index = hash_string(key, map->size);
-    hashmap_entry *entry = map->entries[index];
-    hashmap_entry *prev_entry = NULL;
-
-    while (entry) {
-        if (strcmp(entry->key, key) == 0) {
-            if (prev_entry) {
-                prev_entry->next = entry->next;
+// Remove function
+void remove_key(HashmapItem* hashmap[], const char* key) {
+    unsigned int index = hash(key);
+    HashmapItem* current = hashmap[index];
+    HashmapItem* prev = NULL;
+    while (current != NULL) {
+        if (strcmp(current->key, key) == 0) {
+            if (prev == NULL) {
+                hashmap[index] = current->next;
             } else {
-                map->entries[index] = entry->next;
+                prev->next = current->next;
             }
-            free(entry->key);
-            free(entry->value);
-            free(entry);
-            return true;
+            free(current->key);
+            free(current);
+            return;
         }
-        prev_entry = entry;
-        entry = entry->next;
+        prev = current;
+        current = current->next;
     }
-
-    return false;
-}
-
-// Helper Functions
-unsigned long hash_string(const char *str, size_t size) {
-    unsigned long hash = 5381;
-    int c;
-
-    while ((c = *str++)) {
-        hash = ((hash << 5) + hash) + c;
-    }
-
-    return hash % size;
-}
-
-hashmap_entry *create_entry(const char *key, const char *value) {
-    hashmap_entry *entry = malloc(sizeof(hashmap_entry));
-    if (!entry) return NULL;
-
-    entry->key = strdup(key);
-    if (!entry->key) {
-        free(entry);
-        return NULL;
-    }
-
-    entry->value = strdup(value);
-    if (!entry->value) {
-        free(entry->key);
-        free(entry);
-        return NULL;
-    }
-
-    entry->next = NULL;
-    return entry;
 }
 
 #endif // HASHMAP_H
 
-
 /*
-Example usage:
-// Create a hashmap
-    hashmap *map = create_hashmap(10);
+Example Usage:
+int main() {
+    init_hashmap(hashmap);
 
-    // Insert key-value pairs into the hashmap
-    hashmap_insert(map, "key1", "value1");
-    hashmap_insert(map, "key2", "value2");
+    // Example usage
+    ValueStruct vs = {"Value1", 42, "Value3"};
+    insert(hashmap, "key1", vs);
 
-    // Retrieve and print a value from the hashmap
-    char *value = hashmap_get(map, "key2");
-    if (value != NULL) {
-        printf("Value for 'key1': %s\n", value);
-    } else {
-        printf("Key not found.\n");
+    ValueStruct* found = find(hashmap, "key1");
+    if (found != NULL) {
+        printf("Found: %s, %d, %s\n", found->value1, found->value2, found->value3);
     }
 
-    // Clean up
-    free_hashmap(map);
+    remove_key(hashmap, "key1");
+    found = find(hashmap, "key1");
+    if (found == NULL) {
+        printf("Key1 not found\n");
+    }
+
+    cleanup_hashmap(hashmap);
+    return 0;
+}
 */

@@ -16,7 +16,7 @@ typedef struct {
 
 #define NM_Client_PORT 8080 // port for naming server's communication with the client
 #define NM_SS_PORT 8081 // port for naming server's communication with the storage server
-hashmap *accessible_paths_ip_lookup;
+static HashmapItem* accessible_paths_hashmap[HASH_MAP_SIZE];
 
 int createServerSocket()
 {
@@ -93,7 +93,7 @@ char *parseInput(char *input)
 int parse_ssinit(char *init_message, char *ip_address)
 {
     char *token;
-    int num1, num2;
+    int ss_nm_port, ss_client_port;
 
     token = strtok(init_message, "\n");
     if (token == NULL || strcmp(token, "ssinit") != 0) {
@@ -101,13 +101,21 @@ int parse_ssinit(char *init_message, char *ip_address)
     }
 
     token = strtok(NULL, "\n");
-    if (token == NULL || sscanf(token, "%d %d", &num1, &num2) != 2) {
+    if (token == NULL || sscanf(token, "%d %d", &ss_nm_port, &ss_client_port) != 2) {
         return 0;
     }
 
     token = strtok(NULL, "\n");
     while (token != NULL) {
-        hashmap_insert(accessible_paths_ip_lookup, token, ip_address);
+        ValueStruct vs = {ip_address, ss_nm_port, ss_client_port, 0, 0};
+        insert(accessible_paths_hashmap, token, vs);
+
+        ValueStruct *myStruct = find(accessible_paths_hashmap, token);
+        // printf("IP is: %s\n", myStruct->ip);
+        // printf("Client port is: %d\n", myStruct->client_port);
+        // printf("NM port is: %d\n", myStruct->nm_port);
+        // printf("Num readers is: %d\n", myStruct->num_readers);
+        // printf("Is writing is: %d\n", myStruct->isWriting);
         token = strtok(NULL, "\n");
     }
 
@@ -245,7 +253,7 @@ int main() {
     NM_SS_address.sin_port = htons(NM_SS_PORT);
 
     // Hashmap creation
-    accessible_paths_ip_lookup = create_hashmap(1000);
+    init_hashmap(accessible_paths_hashmap);
 
     // Socket creation and binding
     NM_client_fd = createServerSocket();
