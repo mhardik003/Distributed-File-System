@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "utils.h"
 #define GRN "\e[0;32m"
 #define RED "\e[0;31m"
 #define reset "\e[0m"
@@ -18,7 +19,30 @@ char *delete_file(char *filename) {
 
 char *read_file(char *filename) {
   printf(GRN "Reading file %s\n" reset, filename);
-  return GRN "Reading the file" reset;
+  ValueStruct *myStruct;
+  if ((myStruct = find(accessible_paths_hashmap, filename)) == NULL) {
+    printf(RED "File not found\n" reset);
+    return RED "File not found" reset;
+  }
+  
+  // printf("IP is: %s\n", myStruct->ip);
+  // printf("Client port is: %d\n", myStruct->client_port);
+  // printf("NM port is: %d\n", myStruct->nm_port);
+  // printf("Num readers is: %d\n", myStruct->num_readers);
+  // printf("Is writing is: %d\n", myStruct->isWriting);
+  // printf(GRN"IP is: %s\n"reset, myStruct->ip);
+
+  char response[1024];
+  strcpy(response, "lookup response\nip:");
+  strcat(response, myStruct->ip);
+  strcat(response, "\nclient_port:");
+  char client_port[20];
+  sprintf(client_port, "%d", myStruct->client_port);
+  strcat(response, client_port);
+
+  char *response_final = (char *)malloc(10000 * sizeof(char));
+  strcpy(response_final, response);
+  return response_final;
 }
 
 char *write_file(char *filename, char *data) {

@@ -29,7 +29,9 @@ int parse_ssinit(char *init_message, char *ip_address) {
 
   token = strtok(NULL, "\n");
   while (token != NULL) {
-    ValueStruct vs = {ip_address, ss_nm_port, ss_client_port, 0, 0};
+    char ipAddrCharArray[100];
+    strcpy(ipAddrCharArray, ip_address);
+    ValueStruct vs = {ipAddrCharArray, ss_nm_port, ss_client_port, 0, 0};
     insert(accessible_paths_hashmap, token,
            vs); // insert the path and the value struct in the hashmap for the
                 // new SS

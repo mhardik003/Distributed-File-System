@@ -82,7 +82,23 @@ void connectToServer(int sock, struct sockaddr_in *serv_addr) {
 void readMessage(int sock) {
     char buffer[1024] = {0};
     read(sock, buffer, 1024);
-    printf("%s\n", buffer);
+
+    if(strncmp(buffer, "lookup response", 15) == 0) {
+        char *token = strtok(buffer, "\n");
+        token = strtok(NULL, "\n");
+        char ip[100];
+        sscanf(token, "ip:%s", ip);
+        token = strtok(NULL, "\n");
+        int port;
+        sscanf(token, "client_port:%d", &port);
+        printf("IP is: %s\n", ip);
+        printf("Port is: %d\n", port);
+        printf("Sending request to the storage server at the IP address %s and port %d\n", ip, port);
+    }
+
+    else {
+        printf("%s\n", buffer);
+    }
 }
 
 void print_DFS_features() {
