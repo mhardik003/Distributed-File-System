@@ -3,35 +3,44 @@
 
 #include "utils.h"
 
-int createServerSocket() {
+int createServerSocket()
+{
   int server_fd = socket(AF_INET, SOCK_STREAM, 0);
-  if (server_fd == 0) {
+  if (server_fd == 0)
+  {
     perror("socket failed");
     exit(EXIT_FAILURE);
   }
   return server_fd;
 }
 
-void bindServerSocket(int server_fd, struct sockaddr_in *address) {
-  if (bind(server_fd, (struct sockaddr *)address, sizeof(*address)) < 0) {
+void bindServerSocket(int server_fd, struct sockaddr_in *address)
+{
+  if (bind(server_fd, (struct sockaddr *)address, sizeof(*address)) < 0)
+  {
     perror("bind failed");
+    close(server_fd);
     exit(EXIT_FAILURE);
   }
 }
 
-void startListening(int server_fd) {
-  if (listen(server_fd, 3) < 0) {
+void startListening(int server_fd)
+{
+  if (listen(server_fd, 3) < 0)
+  {
     perror("listen");
     exit(EXIT_FAILURE);
   }
 }
 
 int acceptConnection(int server_fd, struct sockaddr_in *address,
-                     char *ip_buffer) {
+                     char *ip_buffer)
+{
   int addrlen = sizeof(*address);
   int new_socket =
       accept(server_fd, (struct sockaddr *)address, (socklen_t *)&addrlen);
-  if (new_socket < 0) {
+  if (new_socket < 0)
+  {
     perror("accept");
     exit(EXIT_FAILURE);
   }
@@ -43,7 +52,8 @@ int acceptConnection(int server_fd, struct sockaddr_in *address,
   return new_socket;
 }
 
-void sendMessage(int socket, char *message) {
+void sendMessage(int socket, char *message)
+{
   send(socket, message, strlen(message), 0);
   printf("Message sent!\n");
 }

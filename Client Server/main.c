@@ -91,9 +91,34 @@ void readMessage(int sock) {
         token = strtok(NULL, "\n");
         int port;
         sscanf(token, "client_port:%d", &port);
-        printf("IP is: %s\n", ip);
-        printf("Port is: %d\n", port);
+        // printf("IP is: %s\n", ip);
+        // printf("Port is: %d\n", port);
         printf("Sending request to the storage server at the IP address %s and port %d\n", ip, port);
+        
+        // create a new socket for communication with the storage server
+        int sock;
+        struct sockaddr_in serv_addr, cli_addr;
+        char server_ip[INET_ADDRSTRLEN]; // Buffer for the IP address
+
+        cli_addr.sin_family = AF_INET;
+        cli_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+        cli_addr.sin_port = htons(CLIENT_SS_PORT);
+
+        sock = createClientSocket();
+        bindClientSocket(sock, &cli_addr);
+
+        memset(&serv_addr, 0, sizeof(serv_addr));
+        serv_addr.sin_family = AF_INET;
+        serv_addr.sin_port = htons(port);
+
+        if (inet_pton(AF_INET, ip, &serv_addr.sin_addr) <= 0) {
+            printf("\nInvalid address/ Address not supported \n");
+            return;
+        }
+
+        connectToServer(sock, &serv_addr);
+        sendMessage(sock, "Send me the file\n");
+        readMessage(sock);
     }
 
     else {

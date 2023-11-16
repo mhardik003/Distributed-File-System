@@ -18,11 +18,11 @@ int main() {
     init_hashmap(accessible_paths_hashmap);
 
     // Socket creation and binding
-    NM_client_fd = createServerSocket();
     NM_SS_fd = createServerSocket();
+    NM_client_fd = createServerSocket();
 
-    bindServerSocket(NM_client_fd, &NM_client_address);
     bindServerSocket(NM_SS_fd, &NM_SS_address);
+    bindServerSocket(NM_client_fd, &NM_client_address);
 
     // Start listening on both ports
     startListening(NM_client_fd);
