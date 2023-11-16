@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <unistd.h>
+#include "utils.h"
 
 // Define the structure of the value
 typedef struct {
@@ -20,7 +22,6 @@ typedef struct HashmapItem {
     struct HashmapItem* next; // for handling collisions
 } HashmapItem;
 
-#define HASH_MAP_SIZE 100
 
 // Function Declarations
 void init_hashmap(HashmapItem* hashmap[]);

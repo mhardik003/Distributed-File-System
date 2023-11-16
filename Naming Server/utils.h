@@ -1,1 +1,0 @@
-char *operation_handler(char **inputs, int num_inputs);
