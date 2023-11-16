@@ -127,7 +127,7 @@ int main() {
         return 1;
     }
 
-    listFilesRecursively(path, &allPaths, &length);
+    listFilesRecursively(path, "", &allPaths, &length);
     strcpy(allPathsCopy, allPaths);
 
     char *token = strtok(allPaths, "\n");
