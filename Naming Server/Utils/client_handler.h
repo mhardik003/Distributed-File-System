@@ -1,7 +1,6 @@
 #ifndef CLIENT_HANDLER_H
 #define CLIENT_HANDLER_H
 
-
 #include "server_setup.h"
 #include "utils.h"
 
@@ -10,14 +9,15 @@ char *readClientMessage(int sock);
 void *handleClientConnection(void *arg);
 void *listenForClients(void *arg);
 
-
+#define WORD_SIZE_IN_INPUT 100
+#define NUM_WORDS_IN_INPUT 100
 
 char *parseInput(char *input) {
   // array to store tokens
-  char **tokens = (char **)malloc(10 * sizeof(char *));
+  char **tokens = (char **)malloc(NUM_WORDS_IN_INPUT * sizeof(char *));
 
   for (int i = 0; i < 10; i++) {
-    tokens[i] = (char *)malloc(100 * sizeof(char));
+    tokens[i] = (char *)malloc(WORD_SIZE_IN_INPUT * sizeof(char));
   }
   int i = 0;
   char *token = strtok(input, " ");
@@ -30,18 +30,15 @@ char *parseInput(char *input) {
   return operation_handler(tokens, i);
 }
 
-
 char *readClientMessage(int sock) {
   // printf("Now reading the message\n");
   char buffer[BUFFER_RECV_SIZE] = {0};
   if (recv(sock, buffer, BUFFER_RECV_SIZE, 0) < 0) {
     return "Error in receiving the message";
   }
-  printf("Message received by Client : %s", buffer);
+  printf("Message received by Client : %s\n", buffer);
   return parseInput(buffer);
 }
-
-
 
 void *handleClientConnection(void *arg) {
   connection_info *info = (connection_info *)arg;
@@ -65,10 +62,6 @@ void *handleClientConnection(void *arg) {
   return NULL;
 }
 
-
-
-
-
 void *listenForClients(void *arg) {
   int server_fd = *(int *)arg;
   while (1) {
@@ -90,6 +83,5 @@ void *listenForClients(void *arg) {
   }
   return NULL;
 }
-
 
 #endif
