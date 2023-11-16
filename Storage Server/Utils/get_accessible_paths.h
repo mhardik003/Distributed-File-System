@@ -11,10 +11,10 @@
 int MAX_PATH_LENGTH = 4096;
 int MAX_TOTAL_LENGTH = 1000000;
 
-void listFilesRecursively(char *basePath, char **paths, int *length);
+void listFilesRecursively(char *basePath, char *currentPath, char **paths, int *length);
 void getSelectedPaths(char *paths, char *selectedPaths);
 
-void listFilesRecursively(char *basePath, char **paths, int *length) {
+void listFilesRecursively(char *basePath, char *currentPath, char **paths, int *length) {
     char path[MAX_PATH_LENGTH];
     struct dirent *dp;
     struct stat statbuf;
@@ -26,13 +26,22 @@ void listFilesRecursively(char *basePath, char **paths, int *length) {
 
     while ((dp = readdir(dir)) != NULL) {
         if (strcmp(dp->d_name, ".") != 0 && strcmp(dp->d_name, "..") != 0) {
-            snprintf(path, sizeof(path), "%s/%s", basePath, dp->d_name);
+            if (strlen(currentPath) == 0) {
+                snprintf(path, sizeof(path), "%s", dp->d_name);
+            } else {
+                snprintf(path, sizeof(path), "%s/%s", currentPath, dp->d_name);
+            }
 
-            if (stat(path, &statbuf) != -1) {
+            char fullPath[MAX_PATH_LENGTH];
+            snprintf(fullPath, sizeof(fullPath), "%s/%s", basePath, dp->d_name);
+
+            if (stat(fullPath, &statbuf) != -1) {
                 snprintf(*paths + *length, MAX_TOTAL_LENGTH - *length, "%s\n", path);
                 *length += strlen(path) + 1;
                 if (S_ISDIR(statbuf.st_mode)) {
-                    listFilesRecursively(path, paths, length);
+                    char newCurrentPath[MAX_PATH_LENGTH];
+                    snprintf(newCurrentPath, sizeof(newCurrentPath), "%s", path);
+                    listFilesRecursively(fullPath, newCurrentPath, paths, length);
                 }
             }
         }
