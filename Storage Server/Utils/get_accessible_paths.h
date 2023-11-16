@@ -48,6 +48,7 @@ void getSelectedPaths(char *paths, char *selectedPaths) {
 
     printf("Enter -1 to select all paths, or the number of paths you would like to select: ");
     scanf("%d", &num);
+    getchar();
 
     selectedPaths[0] = '\0';
 

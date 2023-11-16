@@ -16,6 +16,7 @@ typedef struct {
 
 #define NM_Client_PORT 8080 // port for naming server's communication with the client
 #define NM_SS_PORT 8081 // port for naming server's communication with the storage server
+hashmap *accessible_paths_ip_lookup;
 
 int createServerSocket()
 {
@@ -89,6 +90,30 @@ char *parseInput(char *input)
     return operation_handler(tokens, i);
 }
 
+int parse_ssinit(char *init_message, char *ip_address)
+{
+    char *token;
+    int num1, num2;
+
+    token = strtok(init_message, "\n");
+    if (token == NULL || strcmp(token, "ssinit") != 0) {
+        return 0;
+    }
+
+    token = strtok(NULL, "\n");
+    if (token == NULL || sscanf(token, "%d %d", &num1, &num2) != 2) {
+        return 0;
+    }
+
+    token = strtok(NULL, "\n");
+    while (token != NULL) {
+        hashmap_insert(accessible_paths_ip_lookup, token, ip_address);
+        token = strtok(NULL, "\n");
+    }
+
+    return 1;
+}
+
 char *readClientMessage(int sock)
 {
     // printf("Now reading the message\n");
@@ -101,7 +126,7 @@ char *readClientMessage(int sock)
     return parseInput(buffer);
 }
 
-char *readStorageServerMessage(int sock)
+char *readStorageServerMessage(int sock, char *ip_address)
 {
     // printf("Now reading the message\n");
     char buffer[1024] = {0};
@@ -110,6 +135,10 @@ char *readStorageServerMessage(int sock)
         return "Error in receiving the message";
     }
     printf("Message received by SS : %s", buffer);
+    if(strncmp(buffer, "ssinit", 6) == 0) {
+        parse_ssinit(buffer, ip_address);
+        return "ssinit done";
+    }
     return "Hey SS, how are you? -NM";
 }
 
@@ -142,14 +171,16 @@ void *handleStorageServerConnection(void *arg) {
 
     free(info);  // Free the allocated memory for the connection info
 
-    while (1) {
-        char *message = readStorageServerMessage(sock);
+    // while (1) {
+        char *message = readStorageServerMessage(sock, ip_buffer);
         if (message == NULL || strcmp(message, "QUIT") == 0) {
             printf("Storage Server [%s] disconnected\n", ip_buffer);
-            break;
+            close(sock);
+            return NULL;
+            // break;
         }
         sendMessage(sock, message);
-    }
+    // }
 
     close(sock);
     return NULL;
@@ -213,7 +244,7 @@ int main() {
     NM_SS_address.sin_port = htons(NM_SS_PORT);
 
     // Hashmap creation
-    hashmap *accessible_paths_ip_lookup = create_hashmap(1000);
+    accessible_paths_ip_lookup = create_hashmap(1000);
 
     // Socket creation and binding
     NM_client_fd = createServerSocket();

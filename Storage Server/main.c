@@ -161,14 +161,14 @@ int main() {
     printf("Sent initialization message to naming server!\n");
     readMessage(sock); // Read confirmation message from server
 
-    while(1) {
-        char message[1024];
-        printf(CYN"Enter Message: "reset);
-        fgets(message, 1024, stdin);
-        message[strcspn(message, "\n")] = 0; // Remove newline character if present
-        sendMessage(sock, message);
-        readMessage(sock); // Read confirmation message from server
-    }
+    // while(1) {
+        // char message[1024];
+        // printf(CYN"Enter Message: "reset);
+        // fgets(message, 1024, stdin);
+        // message[strcspn(message, "\n")] = 0; // Remove newline character if present
+        // sendMessage(sock, message);
+        // readMessage(sock); // Read confirmation message from server
+    // }
 
     close(sock);
     return 0;
