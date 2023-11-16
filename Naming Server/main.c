@@ -157,6 +157,7 @@ void *handleClientConnection(void *arg) {
             break;
         }
         sendMessage(sock, message);
+        free(message);
     }
 
     close(sock);
