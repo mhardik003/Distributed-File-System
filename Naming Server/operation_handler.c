@@ -21,6 +21,9 @@ char *delete(char *filename)
 char *read(char *filename)
 {
     printf(GRN"Reading file %s"reset, filename);
+    // TODO-Mihika: search for ip and client_port of this filename in hashmap, return both of these to the client
+    // then the client sends a TCP request to the ip:port
+    // we need to modify the ss to keep listening for requests
     return GRN"Reading the file"reset;
 }
 
