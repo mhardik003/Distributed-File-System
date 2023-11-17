@@ -6,9 +6,9 @@
 int createServerSocket()
 {
   int server_fd = socket(AF_INET, SOCK_STREAM, 0);
-  if (server_fd == 0)
+  if (server_fd <= 0)
   {
-    perror("socket failed");
+    perror("Socket creation error");
     exit(EXIT_FAILURE);
   }
   return server_fd;
@@ -33,12 +33,10 @@ void startListening(int server_fd)
   }
 }
 
-int acceptConnection(int server_fd, struct sockaddr_in *address,
-                     char *ip_buffer)
+int acceptConnection(int server_fd, struct sockaddr_in *address, char *ip_buffer)
 {
   int addrlen = sizeof(*address);
-  int new_socket =
-      accept(server_fd, (struct sockaddr *)address, (socklen_t *)&addrlen);
+  int new_socket = accept(server_fd, (struct sockaddr *)address, (socklen_t *)&addrlen);
   if (new_socket < 0)
   {
     perror("accept");

@@ -8,11 +8,15 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+// #include "utils.h"
+
 int MAX_PATH_LENGTH = 4096;
 int MAX_TOTAL_LENGTH = 1000000;
 
+
 void listFilesRecursively(char *basePath, char *currentPath, char **paths, int *length);
 void getSelectedPaths(char *paths, char *selectedPaths);
+
 
 void listFilesRecursively(char *basePath, char *currentPath, char **paths, int *length) {
     char path[MAX_PATH_LENGTH];
