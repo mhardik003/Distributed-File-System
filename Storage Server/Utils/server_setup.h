@@ -194,7 +194,6 @@ int sendInfoToNM(char *server_ip, int SS_NM_fd, struct sockaddr_in SS_NM_address
     }
 
     connectToServer(SS_NM_fd, &SS_NM_address);
-    printf("I'm here\n");
     sendMessage(SS_NM_fd, firstMessageToNM);
     printf("Sent initialization message to naming server!\n");
 

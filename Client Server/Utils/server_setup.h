@@ -99,7 +99,7 @@ void bindClientSocket(int sock, struct sockaddr_in *cli_addr) {
 
 void sendMessage(int socket, char *message) {
     send(socket, message, strlen(message), 0);
-    printf("Message sent\n");
+    // printf("Message sent\n");
 }
 
 char *readMessage(int sock) {

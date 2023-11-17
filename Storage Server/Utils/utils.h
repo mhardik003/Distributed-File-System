@@ -14,6 +14,7 @@
 // User defined headers
 #include "server_setup.h"
 #include "get_accessible_paths.h"
+#include "client_operation_handler.h"
 
 // server_setup.h
 int createServerSocket();

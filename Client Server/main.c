@@ -1,9 +1,11 @@
 #include "Utils/utils.h"
 
-int main() {
+int main()
+{
     CLIENT_NM_PORT = findAvailablePort();
     CLIENT_SS_PORT = findAvailablePort();
-    if (CLIENT_NM_PORT == -1 || CLIENT_SS_PORT == -1) {
+    if (CLIENT_NM_PORT == -1 || CLIENT_SS_PORT == -1)
+    {
         printf("No available port found. Exiting.\n");
         return -1;
     }
@@ -29,7 +31,8 @@ int main() {
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(SERVER_PORT);
 
-    if (inet_pton(AF_INET, server_ip, &serv_addr.sin_addr) <= 0) {
+    if (inet_pton(AF_INET, server_ip, &serv_addr.sin_addr) <= 0)
+    {
         printf("\nInvalid address/ Address not supported \n");
         return -1;
     }
@@ -37,14 +40,15 @@ int main() {
     connectToServer(sock, &serv_addr);
     print_DFS_features();
 
-    while(1) { // connection with naming server
+    while (1)
+    { // connection with naming server
         char message[1024];
         printf("Enter your message: ");
         fgets(message, 1024, stdin);
         message[strcspn(message, "\n")] = 0; // Remove newline character if present
         sendMessage(sock, message);
-        char *nm_response = readMessage(sock); // Read confirmation message from server
-        parseInput(nm_response, message); // Parses the client input and sends it to the operation handler
+        char *nm_response = readMessage(sock);   // Read confirmation message from server
+        operation_handler(nm_response, message); // Parses the client input and sends it to the operation handler
     }
 
     close(sock);
