@@ -14,9 +14,10 @@ void *handleClientConnection(void *arg)
     read(socket, buffer, 1024);
     // parseClientInput(buffer);
     // printf("%s\n", buffer);
-    printf("Received the following message from the client : %s\n", buffer);
-    send(socket, "Hello from the storage server", strlen("Hello from the storage server"), 0);
+    printf("> Received the following message from the client : %s\n", buffer);
+    send(socket, "On it sir!", strlen("On it sir!"), 0);
     printf("Hello message sent\n");
+    close(socket);
 }
 
 void *listenForClients(void *NM_client_fd)
