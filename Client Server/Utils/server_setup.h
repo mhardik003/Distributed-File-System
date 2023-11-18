@@ -91,6 +91,7 @@ int createClientSocket() {
 
 void bindClientSocket(int sock, struct sockaddr_in *cli_addr) {
     if (bind(sock, (struct sockaddr *)cli_addr, sizeof(*cli_addr)) < 0) {
+        printf("Billu bageele\n");
         perror("bind failed");
         close(sock);
         exit(EXIT_FAILURE);
