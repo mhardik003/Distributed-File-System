@@ -61,7 +61,7 @@ void operation_handler(char *nm_response, char *client_input)
         printf(YEL "SS < %s\n" reset, client_input);
         sendMessage(sock, client_input);
         char *SS_response = readMessage(sock);
-        printf(GRN "> SS : %s\n" reset, SS_response);
+        printf(GRN "SS > %s\n" reset, SS_response);
         close(sock);
     }
 

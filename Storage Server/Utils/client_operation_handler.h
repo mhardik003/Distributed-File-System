@@ -16,6 +16,7 @@ void readFile(int sock, char **client_input_tokens);
 void writeFile(int sock, char **client_input_tokens, int num_tokens);
 void getInfo(int sock, char **client_input_tokens);
 void createFile(int sock, char **client_input_tokens);
+void deleteFile(int sock, char **client_input_tokens);
 void sendACK(char *message);
 
 void parseInput(char *input, int sock)
@@ -56,6 +57,10 @@ void operational_handler(char **input_tokens, int num_tokens, int sock)
     {
         createFile(sock, input_tokens);
     }
+    else if (strcmp(input_tokens[0], "DELETE") == 0)
+    {
+        deleteFile(sock, input_tokens);
+    }
     else
     {
         printf("Invalid command\n");
@@ -95,7 +100,7 @@ void createFile(int sock, char **client_input_tokens)
         return;
     }
 
-    printf("File '%s' created successfully.\n", client_input_tokens[1]);
+    printf(GRN"File '%s' created successfully.\n"reset, client_input_tokens[1]);
 
     // Close the file
     fclose(file);
@@ -103,6 +108,22 @@ void createFile(int sock, char **client_input_tokens)
     close(sock);
 
     return;
+}
+
+void deleteFile(int sock, char **client_input_tokens)
+{
+    if (remove(client_input_tokens[1]) == 0)
+    {
+        printf(GRN"File '%s' deleted successfully.\n"reset, client_input_tokens[1]);
+        sendMessage(sock, "DELETED");
+        close(sock);
+    }
+    else
+    {
+        perror("Error deleting file");
+        sendMessage(sock, "-1");
+        close(sock);
+    }
 }
 
 void readFile(int sock, char **client_input_tokens)

@@ -110,6 +110,41 @@ char *delete_file(char *filename)
 {
 
   printf(GRN "Deleting file %s\n" reset, filename);
+  ValueStruct *myStruct;
+  if ((myStruct = find(accessible_paths_hashmap, filename)) == NULL)
+  {
+    printf(RED "File not found\n" reset);
+    return RED "> NM : File not found" reset;
+  }
+
+  int sock = connect_to_ss(myStruct->ip, myStruct->nm_port);
+  if (sock < 0)
+  {
+    printf(RED "Error in connecting to the storage server\n" reset);
+    return RED "> NM : Error in connecting to the storage server" reset;
+  }
+
+  char buffer[4096] = {0};
+  strcpy(buffer, "DELETE ");
+  strcat(buffer, filename);
+  printf("SS < %s\n", buffer);
+  sendMessage(sock, buffer);
+
+  char *response = readMessage(sock);
+  close(sock);
+
+  if (strcmp(response, "DELETED") == 0)
+  {
+    printf(GRN "SS > File deleted successfully\n" reset);
+    remove_key(accessible_paths_hashmap, filename);
+    return GRN "> NM : File deleted successfully" reset;
+  }
+  else
+  {
+    printf(RED "Error in deleting the file\n" reset);
+    return RED "> NM : Error in deleting the file" reset;
+  }
+
   return GRN "> NM : Deleting the file" reset;
 }
 
