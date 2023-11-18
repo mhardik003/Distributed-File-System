@@ -40,7 +40,7 @@ char *readClientMessage(int sock)
   {
     return "Error in receiving the message";
   }
-  printf("Message received by Client : %s\n", buffer);
+  printf("Client > %s\n", buffer);
   return parseInput(buffer);
 }
 
@@ -55,15 +55,10 @@ void *handleClientConnection(void *arg)
 
   while (1)
   {
-    char *message = readClientMessage(sock); 
+    char *message = readClientMessage(sock);
     // readClient message takes the socket as input, reads whatever message the client has sent,
     // then it parses the input and performs the appropriate action and finally returns the appropriate
     // message which needs to be sent to the client
-    if (message == NULL || strcmp(message, "QUIT") == 0)
-    {
-      printf("Storage Server [%s] disconnected\n", ip_buffer);
-      break;
-    }
     sendMessage(sock, message);
     // free(message);
   }
@@ -82,7 +77,7 @@ void *listenForClients(void *arg)
 
     int *new_sock = (int *)malloc(sizeof(int));
     *new_sock = acceptConnection(server_fd, &address, ip_buffer);
-    printf("Connected to client %s\n", ip_buffer);
+    printf(CYN "Connected to client %s\n" reset, ip_buffer);
 
     if (*new_sock >= 0)
     {

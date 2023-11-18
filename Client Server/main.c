@@ -23,7 +23,7 @@ int main()
     sock = createClientSocket();
     bindClientSocket(sock, &cli_addr);
 
-    printf("Enter the IP address of the Naming Server: ");
+    printf(BLU "Enter the IP address of the Naming Server: " reset);
     fgets(server_ip, sizeof(server_ip), stdin);
     server_ip[strcspn(server_ip, "\n")] = 0; // Remove newline character if present
 
@@ -43,7 +43,7 @@ int main()
     while (1)
     { // connection with naming server
         char message[1024];
-        printf("Enter your message: ");
+        printf(BLU "Enter your message: " reset);
         fgets(message, 1024, stdin);
         message[strcspn(message, "\n")] = 0; // Remove newline character if present
         sendMessage(sock, message);

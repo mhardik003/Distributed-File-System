@@ -5,12 +5,18 @@
 #include <string.h>
 #include "server_setup.h"
 
+#define RED "\e[0;31m"
+#define GRN "\e[0;32m"
+#define CYN "\e[0;36m"
+#define reset "\e[0m"
+
 void parseInput(char *input, int sock);
 void operational_handler(char **input_tokens, int num_tokens, int sock);
 void readFile(int sock, char **client_input_tokens);
 void writeFile(int sock, char **client_input_tokens, int num_tokens);
 void getInfo(int sock, char **client_input_tokens);
 void createFile(int sock, char **client_input_tokens);
+void sendACK(char *message);
 
 void parseInput(char *input, int sock)
 {
@@ -93,7 +99,8 @@ void createFile(int sock, char **client_input_tokens)
 
     // Close the file
     fclose(file);
-    sendMessage(sock, "1");
+    sendMessage(sock, "SS > CREATED");
+    close(sock);
 
     return;
 }
@@ -105,7 +112,7 @@ void readFile(int sock, char **client_input_tokens)
     long fileLen;
 
     // Open the file in read mode
-    printf("reading from the file $%s$\n", client_input_tokens[1]);
+    printf(YEL"reading from the file $%s$\n"reset, client_input_tokens[1]);
     file = fopen(client_input_tokens[1], "rb");
     if (file == NULL)
     {
@@ -122,7 +129,7 @@ void readFile(int sock, char **client_input_tokens)
     buffer = (char *)malloc(fileLen + 1);
     if (!buffer)
     {
-        fprintf(stderr, "Memory allocation failed!\n");
+        fprintf(stderr, RED"Memory allocation failed!\n"reset);
         fclose(file);
         return;
     }
@@ -135,8 +142,16 @@ void readFile(int sock, char **client_input_tokens)
     buffer[fileLen] = '\0';
 
     // Print the contents
-    printf("Sending the following content to the client:\n%s", buffer);
+    printf(GRN"Client < \n%s\n"reset, buffer);
     sendMessage(sock, buffer);
+    close(sock);
+
+    // send ACK to name server
+    char *ackMessage = (char *)malloc(1000 * sizeof(char));
+    ackMessage[0] = '\0';
+    strcat(ackMessage, "ACK\nREAD\n");
+    strcat(ackMessage, client_input_tokens[1]);
+    sendACK(ackMessage);
 
     // Free the buffer memory
     free(buffer);
@@ -151,11 +166,11 @@ void getInfo(int sock, char **client_input_tokens)
     // Get file status
     if (stat(client_input_tokens[1], &fileInfo) != 0)
     {
-        perror("Error getting file info");
+        perror(RED"Error getting file info"reset);
         return;
     }
 
-    strcat(message, "File Size: \n");
+    strcat(message, "\nFile Size: ");
     char *size = (char *)malloc(100 * sizeof(char));
     sprintf(size, "%ld", fileInfo.st_size);
     strcat(message, size);
@@ -176,6 +191,7 @@ void getInfo(int sock, char **client_input_tokens)
     strcat(message, "\n");
 
     // Print last access time
+    printf(CYN"Sending the following content to the client: \n"reset);
     printf("Last Accessed: %s", ctime(&fileInfo.st_atime));
     strcat(message, "Last Accessed: ");
     strcat(message, ctime(&fileInfo.st_atime));
@@ -188,6 +204,13 @@ void getInfo(int sock, char **client_input_tokens)
     // strcat(message, "\n");
 
     sendMessage(sock, message);
+    close(sock);
+
+    char *ackMessage = (char *)malloc(1000 * sizeof(char));
+    ackMessage[0] = '\0';
+    strcat(ackMessage, "ACK\nGETINFO\n");
+    strcat(ackMessage, client_input_tokens[1]);
+    sendACK(ackMessage);
     free(message);
 }
 
@@ -219,6 +242,35 @@ void writeFile(int sock, char **client_input_tokens, int num_tokens)
 
     printf("Text appended successfully.\n");
     sendMessage(sock, "Text appended successfully.\n");
+    close(sock);
+
+    // send ACK to naming server
+    char *ackMessage = (char *)malloc(1000 * sizeof(char));
+    ackMessage[0] = '\0';
+    strcat(ackMessage, "ACK\nWRITE\n");
+    strcat(ackMessage, client_input_tokens[1]);
+    sendACK(ackMessage);
+
+    free(content);
+}
+
+void sendACK(char *message) {
+    int SS_NM_fd = createServerSocket();
+
+    struct sockaddr_in SS_NM_connection;
+    memset(&SS_NM_connection, 0, sizeof(SS_NM_connection));
+    SS_NM_connection.sin_family = AF_INET;
+    SS_NM_connection.sin_port = htons(SERVER_PORT);
+
+    if (inet_pton(AF_INET, name_server_ip, &SS_NM_connection.sin_addr) <= 0)
+    { // Convert IPv4 and IPv6 addresses from text to binary form
+        printf("\nInvalid address/ Address not supported \n");
+        return;
+    }
+
+    connectToServer(SS_NM_fd, &SS_NM_connection);
+    sendMessage(SS_NM_fd, message);
+    close(SS_NM_fd);
 }
 
 #endif

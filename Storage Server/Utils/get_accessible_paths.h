@@ -8,6 +8,13 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+
+#define RED "\e[0;31m"
+#define GRN "\e[0;32m"
+#define YEL "\e[0;33m"
+#define BLU "\e[0;34m"
+#define reset "\e[0m"
+
 // #include "utils.h"
 
 int MAX_PATH_LENGTH = 4096;
@@ -59,7 +66,7 @@ void getSelectedPaths(char *paths, char *selectedPaths) {
     char *token;
     char buffer[MAX_TOTAL_LENGTH];
 
-    printf("Enter -1 to select all paths, or the number of paths you would like to select: ");
+    printf(BLU"Enter -1 to select all paths, or the number of paths you would like to select: "reset);
     scanf("%d", &num);
     getchar();
 
@@ -68,7 +75,7 @@ void getSelectedPaths(char *paths, char *selectedPaths) {
     if (num == -1) {
         strcpy(selectedPaths, paths);
     } else {
-        printf("Enter the indices of the paths you want to select:\n");
+        printf(BLU"Enter the indices of the paths you want to select:\n"reset);
         for (int i = 0; i < num; i++) {
             scanf("%d", &index);
             strcpy(buffer, paths);

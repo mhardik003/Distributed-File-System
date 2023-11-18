@@ -17,6 +17,7 @@
 // #include "utils.h"
 
 #define SERVER_PORT 8081 // port of the NM
+char *name_server_ip;
 
 int START_PORT = 5000;
 // int MAX_PATH_LENGTH = 4096;
@@ -199,10 +200,13 @@ void sendInfoToNM()
     snprintf(firstMessageToNM, MAX_TOTAL_LENGTH, "ssinit\n%d %d\n", SS_NM_PORT, SS_Client_PORT);
     strcat(firstMessageToNM, selectedPaths);
 
-    printf("Enter the IP address of the Naming Server: ");
+    printf(BLU "Enter the IP address of the Naming Server: " reset);
     fgets(server_ip, INET_ADDRSTRLEN, stdin);
+    name_server_ip = (char *)malloc(INET_ADDRSTRLEN);
+    name_server_ip[0] = '\0';
 
     server_ip[strcspn(server_ip, "\n")] = 0; // Remove newline character if present
+    strcpy(name_server_ip, server_ip);
 
     struct sockaddr_in SS_NM_connection;
     memset(&SS_NM_connection, 0, sizeof(SS_NM_connection));
@@ -220,7 +224,7 @@ void sendInfoToNM()
     // printf("Sent initialization message to naming server!\n");
 
     readMessage(SS_NM_fd); // Read confirmation message from server
-    
+
     printf("> Sent all paths to naming server and now closing the socket!\n");
     close(SS_NM_fd);
     // FD_CLR(SS_NM_fd, &master); // Remove the socket from the master set

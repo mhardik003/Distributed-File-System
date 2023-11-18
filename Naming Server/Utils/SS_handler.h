@@ -77,13 +77,32 @@ char *readStorageServerMessage(int sock, char *ip_address)
   char buffer[BUFFER_RECV_SIZE] = {0};
   if (recv(sock, buffer, BUFFER_RECV_SIZE, 0) < 0)
   {
-    return "Error in receiving the message";
+    return RED "NM > Error in receiving the message" reset;
   }
-  printf("Message received by SS : %s", buffer);
   if (strncmp(buffer, "ssinit", 6) == 0)
   {
+    printf(GRN "%s" reset, buffer);
     parse_ssinit(buffer, ip_address);
-    return "ssinit done";
+    return "NM > ssinit done";
+  }
+  else if (strncmp(buffer, "ACK", 3) == 0)
+  {
+    char *ackToken = strtok(buffer, "\n");
+    ackToken = strtok(NULL, "\n");
+    char *ackPath = strtok(NULL, "\n");
+    printf(GRN "Recieved Acknowledgement from SS for %s operation\n" reset, ackToken);
+    if (strcmp(ackToken, "READ") || strcmp(ackToken, "GETINFO"))
+    {
+      ValueStruct *myStruct = find(accessible_paths_hashmap, ackPath);
+      myStruct->num_readers--;
+      printf(MAG "One reader completed reading. Number of readers for %s is %d\n" reset, ackPath, myStruct->num_readers);
+    }
+    else if (strcmp(ackToken, "WRITE"))
+    {
+      ValueStruct *myStruct = find(accessible_paths_hashmap, ackPath);
+      myStruct->isWriting = 0;
+      printf(MAG "Writer completed writing. isWriting for %s is %d\n" reset, ackPath, myStruct->isWriting);
+    }
   }
   return "Hey SS, how are you? -NM";
 }
@@ -109,13 +128,6 @@ void *handleStorageServerConnection(void *arg)
 
   // while (1) {
   char *message = readStorageServerMessage(sock, ip_buffer);
-  if (message == NULL || strcmp(message, "QUIT") == 0)
-  {
-    printf("Storage Server [%s] disconnected\n", ip_buffer);
-    close(sock);
-    return NULL;
-    // break;
-  }
   sendMessage(sock, message);
   // }
 
@@ -134,7 +146,7 @@ void *listenForStorageServers(void *arg)
     Returns:
     void * : NULL
   */
- 
+
   int server_fd = *(int *)arg;
   while (1)
   {
@@ -143,7 +155,7 @@ void *listenForStorageServers(void *arg)
 
     int *new_sock = (int *)malloc(sizeof(int));
     *new_sock = acceptConnection(server_fd, &address, ip_buffer);
-    printf("Connected to storage server %s\n", ip_buffer);
+    printf(CYN "NM > Connected to storage server %s\n" reset, ip_buffer);
 
     if (*new_sock >= 0)
     {

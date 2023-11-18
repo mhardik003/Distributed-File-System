@@ -14,8 +14,8 @@ int connect_to_ss(char *ip, int port) // for privelleged functions
   struct sockaddr_in serv_addr, cli_addr;
   char server_ip[INET_ADDRSTRLEN]; // buffer for the IP address
 
-  printf(CYN"Connecting to the SS at %s:%d\n"reset, ip, port);
-  printf(CYN"Creating socket via port %d\n"reset, NM_SS_PORT_CONNECT);
+  printf(CYN "Connecting to the SS at %s:%d\n" reset, ip, port);
+  printf(CYN "Creating socket via port %d\n" reset, NM_SS_PORT_CONNECT);
 
   cli_addr.sin_family = AF_INET;
   cli_addr.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -30,7 +30,7 @@ int connect_to_ss(char *ip, int port) // for privelleged functions
 
   if (inet_pton(AF_INET, ip, &serv_addr.sin_addr) <= 0)
   {
-    printf(RED"\nInvalid address/ Address not supported \n"reset);
+    printf(RED "\nInvalid address/ Address not supported \n" reset);
     return -1;
   }
 
@@ -52,7 +52,7 @@ char *create(char *input)
   if (lastSlash == NULL)
   {
     printf(RED "Invalid path\n" reset);
-    return RED "Invalid path" reset;
+    return RED "> NM : Invalid path" reset;
   }
 
   int position = lastSlash - input;
@@ -64,45 +64,45 @@ char *create(char *input)
 
   // Replace it with null character if found
 
-  printf(GRN"Folder name is: %s\n"reset, folder_name);
-  printf(GRN"File name is: %s\n"reset, file_name);
+  printf(GRN "Folder name is: %s\n" reset, folder_name);
+  printf(GRN "File name is: %s\n" reset, file_name);
 
   ValueStruct *myStruct;
   if ((myStruct = find(accessible_paths_hashmap, folder_name)) == NULL)
   {
     printf(RED "Folder not found\n" reset);
-    return RED "Folder not found" reset;
+    return RED "> NM : Folder not found" reset;
   }
 
   int sock = connect_to_ss(myStruct->ip, myStruct->nm_port);
   if (sock < 0)
   {
     printf(RED "Error in connecting to the storage server\n" reset);
-    return RED "Error in connecting to the storage server" reset;
+    return RED "> NM : Error in connecting to the storage server" reset;
   }
 
   char buffer[4096] = {0};
   strcpy(buffer, "CREATE ");
   strcat(buffer, input);
-  printf("> Sending message to SS : %s\n", buffer);
+  printf("SS < %s\n", buffer);
   sendMessage(sock, buffer);
 
   char *response = readMessage(sock);
   close(sock);
 
-  if (strcmp(response, "1") == 0)
+  if (strcmp(response, "CREATED") == 0)
   {
-    printf(GRN "File created successfully\n" reset);
+    printf(GRN "> SS : File created successfully\n" reset);
     ValueStruct vs = {myStruct->ip, myStruct->nm_port, myStruct->nm_port, 0, 0};
     insert(accessible_paths_hashmap, input,
            vs); // insert the path and the value struct in the hashmap for the
                 // new SS
-    return GRN "File created successfully" reset;
+    return GRN "> NM : File created successfully" reset;
   }
   else
   {
     printf(RED "Error in creating the file\n" reset);
-    return RED "Error in creating the file" reset;
+    return RED "> NM : Error in creating the file" reset;
   }
 }
 
@@ -110,17 +110,17 @@ char *delete_file(char *filename)
 {
 
   printf(GRN "Deleting file %s\n" reset, filename);
-  return GRN "Deleting the file" reset;
+  return GRN "> NM : Deleting the file" reset;
 }
 
-char *read_write_getinfo_file(char *filename)
+char *read_write_getinfo_file(char *filename, char *operation)
 {
   printf(GRN "Reading Writing or Getting Info of file %s\n" reset, filename);
   ValueStruct *myStruct;
   if ((myStruct = find(accessible_paths_hashmap, filename)) == NULL)
   {
     printf(RED "File not found\n" reset);
-    return RED "File not found" reset;
+    return RED "> NM : File not found" reset;
   }
 
   // printf("IP is: %s\n", myStruct->ip);
@@ -131,6 +131,22 @@ char *read_write_getinfo_file(char *filename)
   // printf(GRN"IP is: %s\n"reset, myStruct->ip);
 
   // TODO : Add num_reader++, writing = 1;
+  if (strcmp(operation, "READ") || strcmp(operation, "GETINFO"))
+  {
+    printf(MAG "Incrementing num readers to %d for file %s\n" reset, myStruct->num_readers + 1, filename);
+    myStruct->num_readers++;
+  }
+  else if (strcmp(operation, "WRITE"))
+  {
+
+    if (myStruct->isWriting == 1)
+    {
+      return RED "> NM : More than one client cannot write!" reset;
+    }
+
+    printf(MAG "Setting isWriting to 1 for file %s\n" reset, filename);
+    myStruct->isWriting = 1;
+  }
 
   char response[1024];
   strcpy(response, "lookup response\nip:");
@@ -154,7 +170,7 @@ char *read_write_getinfo_file(char *filename)
 char *copy(char *filename1, char *filename2)
 {
   printf(GRN "Copying file %s to %s\n" reset, filename1, filename2);
-  return GRN "Copying the file" reset;
+  return GRN "> NM : Copying the file" reset;
 }
 
 // char *get_info(char *filename)
@@ -168,7 +184,7 @@ char *LS()
   char *keys = get_all_keys(accessible_paths_hashmap);
   // printf("Keys are: %s\n", keys);
   char *response = (char *)malloc(1000);
-  strcpy(response, GRN "Listing files in the directory" reset);
+  strcpy(response, GRN "> NM : Listing files in the directory" reset);
   strcat(response, "\n");
   strcat(response, keys);
   return response;
@@ -193,22 +209,22 @@ char *operation_handler(char **inputs, int num_inputs)
     }
     else if (strcmp(inputs[0], "READ") == 0)
     {
-      return read_write_getinfo_file(inputs[1]);
+      return read_write_getinfo_file(inputs[1], "GETINFO");
     }
     else if (strcmp(inputs[0], "GETINFO") == 0)
     {
-      return read_write_getinfo_file(inputs[1]);
+      return read_write_getinfo_file(inputs[1], "READ");
     }
     else
     {
       printf(RED "Encountered invalid operation\n" reset);
-      return RED "Invalid operation" reset;
+      return RED "> NM : Invalid operation" reset;
     }
   }
 
   else if (strcmp(inputs[0], "WRITE") == 0)
   {
-    return read_write_getinfo_file(inputs[1]);
+    return read_write_getinfo_file(inputs[1], "WRITE");
   }
 
   else if (num_inputs == 3)
@@ -221,14 +237,14 @@ char *operation_handler(char **inputs, int num_inputs)
     else
     {
       printf(RED "Encountered invalid Operation\n" reset);
-      return RED "Invalid operation" reset;
+      return RED "> NM : Invalid operation" reset;
     }
   }
 
   else
   {
     printf(RED "Encountered invalid Operation\n" reset);
-    return RED "Invalid operation" reset;
+    return RED "> NM : Invalid operation" reset;
   }
 }
 

@@ -3,6 +3,11 @@
 
 #include "utils.h"
 
+#define RED "\e[0;31m"
+#define GRN "\e[0;32m"
+#define YEL "\e[0;33m"
+#define reset "\e[0m"
+
 void *handleClientConnection(void *arg)
 {
     connection_info *info = (connection_info *)arg;
@@ -23,7 +28,7 @@ void *handleClientConnection(void *arg)
 
     strcpy(buffer, readMessage(socket));
 
-    printf("> Received the following message from the client : %s\n", buffer);
+    printf(GRN "Client > %s\n" reset, buffer);
     parseInput(buffer, socket);
     free(buffer);
     close(socket);
@@ -49,7 +54,7 @@ void *handleNMConnection(void *arg)
 
     strcpy(buffer, readMessage(socket));
 
-    printf("> Received the following message from the Name Server : %s\n", buffer);
+    printf(GRN "NM > %s\n" reset, buffer);
     parseInput(buffer, socket);
     free(buffer);
     close(socket);
@@ -64,7 +69,7 @@ void *listenForClients(void *NM_client_fd)
     {
         struct sockaddr_in client_address;
         char ip_buffer[INET_ADDRSTRLEN];
-        printf("Waiting for a connection from the Client ...\n");
+        printf(YEL "Listening to requests from clients ...\n" reset);
         new_socket = acceptConnection(client_fd, &client_address, ip_buffer);
 
         if (new_socket < 0)
@@ -75,7 +80,7 @@ void *listenForClients(void *NM_client_fd)
 
         else
         {
-            printf("Client connected with IP address %s and port %d\n", ip_buffer, ntohs(client_address.sin_port));
+            printf(GRN "Client connected with IP address %s and port %d\n" reset, ip_buffer, ntohs(client_address.sin_port));
             connection_info *info = (connection_info *)malloc(sizeof(connection_info));
             info->socket_desc = new_socket;
             strcpy(info->ip_address, ip_buffer);
@@ -94,7 +99,7 @@ void *listenFromNameServer(void *NM_SS_fd)
     {
         struct sockaddr_in nm_address;
         char ip_buffer[INET_ADDRSTRLEN];
-        printf("Waiting for a connection from the NM...\n");
+        printf(YEL "Listening for request from Name Server...\n" reset);
         new_socket = acceptConnection(NM_SS_socket, &nm_address, ip_buffer);
 
         if (new_socket < 0)
@@ -105,7 +110,7 @@ void *listenFromNameServer(void *NM_SS_fd)
 
         else
         {
-            printf("Name Server connected with IP address %s and port %d\n", ip_buffer, ntohs(nm_address.sin_port));
+            printf(CYN "Name Server connected with IP address %s and port %d\n" reset, ip_buffer, ntohs(nm_address.sin_port));
             connection_info *info = (connection_info *)malloc(sizeof(connection_info));
             info->socket_desc = new_socket;
             strcpy(info->ip_address, ip_buffer);

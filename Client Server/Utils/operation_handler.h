@@ -37,7 +37,6 @@ int connect_to_ss(char *ip, int port)
     return sock;
 }
 
-
 void operation_handler(char *nm_response, char *client_input)
 {
     if (strncmp(nm_response, "lookup response", 15) == 0)
@@ -51,7 +50,7 @@ void operation_handler(char *nm_response, char *client_input)
         sscanf(token, "client_port:%d", &port);
         // printf("IP is: %s\n", ip);
         // printf("Port is: %d\n", port);
-        printf("Sending request to the storage server at the IP address %s and port %d\n", ip, port);
+        // printf("Sending request to the storage server at the IP address %s and port %d\n", ip, port);
 
         // create a new socket for communication with the storage server
         int sock = connect_to_ss(ip, port);
@@ -59,10 +58,10 @@ void operation_handler(char *nm_response, char *client_input)
         if (sock == -1) // check if connection was successful
             return;
 
-        printf("Sending the following message to the SS : %s\n", client_input);
+        printf(YEL "SS < %s\n" reset, client_input);
         sendMessage(sock, client_input);
         char *SS_response = readMessage(sock);
-        printf("> SS Response : %s\n", SS_response);
+        printf(GRN "> SS : %s\n" reset, SS_response);
         close(sock);
     }
 

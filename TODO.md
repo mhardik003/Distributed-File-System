@@ -1,0 +1,3 @@
+- On closing client, naming server crashes
+- Test for large files
+- Update num readers and write bool

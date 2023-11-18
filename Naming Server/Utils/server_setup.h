@@ -53,7 +53,7 @@ int acceptConnection(int server_fd, struct sockaddr_in *address, char *ip_buffer
 void sendMessage(int socket, char *message)
 {
   send(socket, message, strlen(message), 0);
-  printf("Message sent!\n");
+  // printf("Message sent!\n");
 }
 
 char *readMessage(int sock)
