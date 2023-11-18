@@ -93,16 +93,24 @@ int findAvailablePort()
     return -1; // No available port found
 }
 
-int createClientSocket()
-{
+int createClientSocket() {
     int sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock < 0)
-    {
-        perror("Socket creation error");
+    if (sock == -1) {
+        perror("Socket creation failed");
         exit(EXIT_FAILURE);
     }
+
+    int opt = 1;
+    // Set SO_REUSEADDR to true
+    if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+        perror("setsockopt(SO_REUSEADDR) failed");
+        close(sock);
+        exit(EXIT_FAILURE);
+    }
+
     return sock;
 }
+
 
 void bindClientSocket(int sock, struct sockaddr_in *cli_addr)
 {

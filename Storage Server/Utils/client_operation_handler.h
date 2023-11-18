@@ -222,8 +222,8 @@ void writeFile(int sock, char **client_input_tokens, int num_tokens)
 
     for (int i = 2; i < num_tokens; i++)
     {
-        strcat(content, client_input_tokens[i]);
         strcat(content, " ");
+        strcat(content, client_input_tokens[i]);
     }
     printf("Writing to the file $%s$\n", client_input_tokens[1]);
     // Open the file in append mode

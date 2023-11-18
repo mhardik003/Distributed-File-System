@@ -8,13 +8,13 @@
 #include "utils.h"
 #include "server_setup.h"
 
-int connect_to_ss(char *ip, int port) // for privelleged functions
+int connect_to_ss(char *SS_ip, int SS_port) // for privelleged functions
 {
   int sock;
   struct sockaddr_in serv_addr, cli_addr;
   char server_ip[INET_ADDRSTRLEN]; // buffer for the IP address
 
-  printf(CYN "Connecting to the SS at %s:%d\n" reset, ip, port);
+  printf(CYN "Connecting to the SS at %s:%d\n" reset, SS_ip, SS_port);
   printf(CYN "Creating socket via port %d\n" reset, NM_SS_PORT_CONNECT);
 
   cli_addr.sin_family = AF_INET;
@@ -26,9 +26,9 @@ int connect_to_ss(char *ip, int port) // for privelleged functions
 
   memset(&serv_addr, 0, sizeof(serv_addr));
   serv_addr.sin_family = AF_INET;
-  serv_addr.sin_port = htons(port);
+  serv_addr.sin_port = htons(SS_port);
 
-  if (inet_pton(AF_INET, ip, &serv_addr.sin_addr) <= 0)
+  if (inet_pton(AF_INET, SS_ip, &serv_addr.sin_addr) <= 0)
   {
     printf(RED "\nInvalid address/ Address not supported \n" reset);
     return -1;

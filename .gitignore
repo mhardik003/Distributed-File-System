@@ -1,1 +1,5 @@
 .DS_Store
+makefile
+storage_server
+naming_server
+client
