@@ -99,7 +99,7 @@ void createFile(int sock, char **client_input_tokens)
 
     // Close the file
     fclose(file);
-    sendMessage(sock, "SS > CREATED");
+    sendMessage(sock, "CREATED");
     close(sock);
 
     return;
