@@ -48,7 +48,7 @@ int parse_ssinit(char *init_message, char *ip_address)
            vs); // insert the path and the value struct in the hashmap for the
                 // new SS
 
-    ValueStruct *myStruct = find(accessible_paths_hashmap, token);
+    // ValueStruct *myStruct = find(accessible_paths_hashmap, token);
     // printf("IP is: %s\n", myStruct->ip);
     // printf("Client port is: %d\n", myStruct->client_port);
     // printf("NM port is: %d\n", myStruct->nm_port);

@@ -5,13 +5,14 @@
 #include <string.h>
 #include "server_setup.h"
 
-void parseClientInput(char *input, int sock);
+void parseInput(char *input, int sock);
 void operational_handler(char **input_tokens, int num_tokens, int sock);
 void readFile(int sock, char **client_input_tokens);
 void writeFile(int sock, char **client_input_tokens, int num_tokens);
 void getInfo(int sock, char **client_input_tokens);
+void createFile(int sock, char **client_input_tokens);
 
-void parseClientInput(char *input, int sock)
+void parseInput(char *input, int sock)
 {
     char **tokens = (char **)calloc(1000, sizeof(char *));
     for (int i = 0; i < 1000; i++)
@@ -45,10 +46,56 @@ void operational_handler(char **input_tokens, int num_tokens, int sock)
     {
         getInfo(sock, input_tokens);
     }
+    else if (strcmp(input_tokens[0], "CREATE") == 0)
+    {
+        createFile(sock, input_tokens);
+    }
     else
     {
         printf("Invalid command\n");
     }
+}
+
+void createFile(int sock, char **client_input_tokens)
+{
+    FILE *file;
+
+    char *relativePath = (char *)calloc(1000, sizeof(char));
+    char *file_name = (char *)calloc(1000, sizeof(char));
+
+    // Find the last occurrence of '\'
+    // relativePath = strrchr(client_input_tokens[1], '/');
+    // file_name = strrchr(client_input_tokens[1], '/');
+    // file_name = file_name + 1;
+
+    // if (relativePath != NULL)
+    // {
+    //     *relativePath = '\0';
+    // }
+
+    // char fullPath[1024]; // Adjust the size as needed
+    // fullPath[0] = '\0';
+    // strcat(fullPath, relativePath);
+    // strcat(fullPath, "/");
+    // strcat(fullPath, file_name);
+    // snprintf(fullPath, sizeof(fullPath), "%s%s", relativePath, file_name);
+
+    // Create and open the file
+    file = fopen(client_input_tokens[1], "w");
+    if (file == NULL)
+    {
+        perror("Error creating file");
+        sendMessage(sock, "-1");
+        return;
+    }
+
+    printf("File '%s' created successfully.\n", client_input_tokens[1]);
+
+    // Close the file
+    fclose(file);
+    sendMessage(sock, "1");
+
+    return;
 }
 
 void readFile(int sock, char **client_input_tokens)
@@ -88,7 +135,7 @@ void readFile(int sock, char **client_input_tokens)
     buffer[fileLen] = '\0';
 
     // Print the contents
-    printf("File contents:\n%s", buffer);
+    printf("Sending the following content to the client:\n%s", buffer);
     sendMessage(sock, buffer);
 
     // Free the buffer memory

@@ -11,16 +11,24 @@
 #include <unistd.h>
 #include <pthread.h>
 
+#define GRN "\e[0;32m"
+#define RED "\e[0;31m"
+#define CYN "\e[0;36m"
+#define reset "\e[0m"
+
 
 
 // User defined constants and macros and global variables
 
 
 #define NM_Client_PORT 8080 // port for naming server's communication with the client
-#define NM_SS_PORT 8081 // port for naming server's communication with the storage server
+#define NM_SS_PORT_LISTEN 8081 // naming server listens to this port for storage server's connection
+#define NM_SS_PORT_CONNECT 8082 // naming server connects to storage servers through this port (only when NM is initiating the connection)
 #define HASH_MAP_SIZE 100
 #define BUFFER_RECV_SIZE 4096 // buffer size for receiving messages
 
+int NM_client_fd;
+int NM_SS_fd;
 
 #include "hashmap.h"
 

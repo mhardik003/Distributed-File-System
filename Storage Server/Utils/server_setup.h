@@ -10,16 +10,17 @@
 #include <unistd.h>
 #include <errno.h>
 #include <pthread.h>
+#include <sys/time.h>
+#include <sys/types.h>
 
 #include "get_accessible_paths.h"
 // #include "utils.h"
 
-#define SERVER_PORT 8081
+#define SERVER_PORT 8081 // port of the NM
 
 int START_PORT = 5000;
 // int MAX_PATH_LENGTH = 4096;
 // int MAX_TOTAL_LENGTH = 1000000;
-
 
 int SS_NM_PORT;
 int SS_Client_PORT;
@@ -120,7 +121,7 @@ int acceptConnection(int server_fd, struct sockaddr_in *address, char *ip_buffer
 void sendMessage(int socket, char *message)
 {
     send(socket, message, strlen(message), 0);
-    printf("Message sent\n");
+    // printf("Message sent\n");
 }
 
 void connectToServer(int sock, struct sockaddr_in *serv_addr)
@@ -133,16 +134,36 @@ void connectToServer(int sock, struct sockaddr_in *serv_addr)
     }
 }
 
-void readMessage(int sock)
+char *readMessage(int sock)
 {
-    char buffer[1024] = {0};
-    read(sock, buffer, 1024);
-    printf("%s\n", buffer);
+    char *buffer = (char *)malloc(1024 * sizeof(char));
+    if (buffer == NULL)
+    {
+        // Handle malloc failure
+        close(sock);
+        return NULL;
+    }
+    memset(buffer, 0, 1024);                       // Initialize buffer to zero
+    ssize_t bytes_read = read(sock, buffer, 1023); // Read one less to leave room for null terminator
+
+    if (bytes_read < 0)
+    {
+        // Handle read error
+        free(buffer);
+        close(sock);
+        return "Error in reading the message";
+    }
+
+    buffer[bytes_read] = '\0'; // Manually null-terminate the string
+    return buffer;
 }
 
-int sendInfoToNM(char *server_ip, int SS_NM_fd, struct sockaddr_in SS_NM_address)
+void sendInfoToNM()
 {
     // for getting accessible paths
+    char *server_ip = (char *)malloc(INET_ADDRSTRLEN);
+    int SS_NM_fd = createServerSocket();
+
     char path[MAX_PATH_LENGTH];
     char *allPaths = (char *)malloc(MAX_TOTAL_LENGTH);
 
@@ -157,7 +178,7 @@ int sendInfoToNM(char *server_ip, int SS_NM_fd, struct sockaddr_in SS_NM_address
     {
         perror("getcwd() error");
         free(allPaths);
-        return 1;
+        return;
     }
 
     listFilesRecursively(path, "", &allPaths, &length); // get all paths
@@ -183,21 +204,26 @@ int sendInfoToNM(char *server_ip, int SS_NM_fd, struct sockaddr_in SS_NM_address
 
     server_ip[strcspn(server_ip, "\n")] = 0; // Remove newline character if present
 
-    memset(&SS_NM_address, 0, sizeof(SS_NM_address));
-    SS_NM_address.sin_family = AF_INET;
-    SS_NM_address.sin_port = htons(SERVER_PORT);
+    struct sockaddr_in SS_NM_connection;
+    memset(&SS_NM_connection, 0, sizeof(SS_NM_connection));
+    SS_NM_connection.sin_family = AF_INET;
+    SS_NM_connection.sin_port = htons(SERVER_PORT);
 
-    if (inet_pton(AF_INET, server_ip, &SS_NM_address.sin_addr) <= 0)
+    if (inet_pton(AF_INET, server_ip, &SS_NM_connection.sin_addr) <= 0)
     { // Convert IPv4 and IPv6 addresses from text to binary form
         printf("\nInvalid address/ Address not supported \n");
-        return -1;
+        return;
     }
 
-    connectToServer(SS_NM_fd, &SS_NM_address);
+    connectToServer(SS_NM_fd, &SS_NM_connection);
     sendMessage(SS_NM_fd, firstMessageToNM);
-    printf("Sent initialization message to naming server!\n");
+    // printf("Sent initialization message to naming server!\n");
 
     readMessage(SS_NM_fd); // Read confirmation message from server
+    
+    printf("> Sent all paths to naming server and now closing the socket!\n");
+    close(SS_NM_fd);
+    // FD_CLR(SS_NM_fd, &master); // Remove the socket from the master set
 }
 
 #endif

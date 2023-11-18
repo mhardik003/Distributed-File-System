@@ -68,7 +68,7 @@ void operation_handler(char *nm_response, char *client_input)
 
     else
     {
-        printf("%s\n", nm_response);
+        printf("%s\n", nm_response); // LS will be printed here
     }
 }
 

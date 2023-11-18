@@ -56,4 +56,36 @@ void sendMessage(int socket, char *message)
   printf("Message sent!\n");
 }
 
+char *readMessage(int sock)
+{
+    char *buffer = (char *)malloc(1024 * sizeof(char));
+    if (buffer == NULL)
+    {
+        // Handle malloc failure
+        close(sock);
+        return NULL;
+    }
+    memset(buffer, 0, 1024);                       // Initialize buffer to zero
+    ssize_t bytes_read = read(sock, buffer, 1023); // Read one less to leave room for null terminator
+
+    if (bytes_read < 0)
+    {
+        // Handle read error
+        free(buffer);
+        close(sock);
+        return "Error in reading the message";
+    }
+
+    buffer[bytes_read] = '\0'; // Manually null-terminate the string
+    return buffer;
+}
+
+void connectToServer(int sock, struct sockaddr_in *serv_addr) {
+    if (connect(sock, (struct sockaddr *)serv_addr, sizeof(*serv_addr)) < 0) {
+        perror(RED"Connection Failed"reset);
+        close(sock);
+        exit(EXIT_FAILURE);
+    }
+}
+
 #endif // SERVER_SETUP_H

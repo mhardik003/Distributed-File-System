@@ -2,7 +2,7 @@
 
 
 int main() {
-    int NM_client_fd, NM_SS_fd;
+    // int NM_client_fd, NM_SS_fd;
     struct sockaddr_in NM_client_address, NM_SS_address;
 
     // Address setup for both ports
@@ -12,7 +12,7 @@ int main() {
 
     NM_SS_address.sin_family = AF_INET;
     NM_SS_address.sin_addr.s_addr = INADDR_ANY;
-    NM_SS_address.sin_port = htons(NM_SS_PORT);
+    NM_SS_address.sin_port = htons(NM_SS_PORT_LISTEN);
 
     // Hashmap creation
     init_hashmap(accessible_paths_hashmap);

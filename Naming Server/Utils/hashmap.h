@@ -5,7 +5,6 @@
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
-#include "utils.h"
 
 // Define the structure of the value
 typedef struct {
@@ -29,6 +28,8 @@ void cleanup_hashmap(HashmapItem* hashmap[]);
 void insert(HashmapItem* hashmap[], const char* key, ValueStruct value);
 ValueStruct* find(HashmapItem* hashmap[], const char* key);
 void remove_key(HashmapItem* hashmap[], const char* key);
+
+#define MAX_HASHMAP_SIZE 1000
 
 // Hash function
 unsigned int hash(const char* key) {
@@ -105,6 +106,21 @@ void remove_key(HashmapItem* hashmap[], const char* key) {
         prev = current;
         current = current->next;
     }
+}
+
+char *get_all_keys(HashmapItem* hashmap[]) {
+    // concatenate all the keys and return
+    char *all_keys = (char *)malloc(MAX_HASHMAP_SIZE * 100);
+    all_keys[0] = '\0';
+    for (int i = 0; i < HASH_MAP_SIZE; ++i) {
+        HashmapItem* item = hashmap[i];
+        while (item != NULL) {
+            strcat(all_keys, item->key);
+            strcat(all_keys, "\n");
+            item = item->next;
+        }
+    }
+    return all_keys;
 }
 
 #endif // HASHMAP_H
