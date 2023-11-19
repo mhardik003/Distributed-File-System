@@ -39,30 +39,43 @@ int connect_to_ss(char *SS_ip, int SS_port) // for privelleged functions
   return sock;
 }
 
-char *create(char *input)
+ValueStruct *check_existence(char *input_check)
 {
-  printf(GRN "Creating file %s\n" reset, input);
+  char *lastSlash;
   char *folder_name = (char *)malloc(1000 * sizeof(char));
   char *file_name = (char *)malloc(1000 * sizeof(char));
-  char *lastSlash;
 
-  // Find the last occurrence of '\'
-  lastSlash = strrchr(input, '/');
+  // Find the last occurrence of '/'
+  lastSlash = strrchr(input_check, '/');
 
   if (lastSlash == NULL)
   {
     printf(RED "Invalid path\n" reset);
-    return RED "> NM : Invalid path" reset;
+    return NULL;
   }
 
-  int position = lastSlash - input;
+  // Check if the input ends in a '/'
+  if (input_check[strlen(input_check) - 1] == '/')
+  {
+    // Remove the last '/'
+    input_check[strlen(input_check) - 1] = '\0';
+  }
 
-  strncpy(folder_name, input, position);
-  folder_name[position] = '\0'; // Null-terminate the string
+  lastSlash = strrchr(input_check, '/');
+
+  if (lastSlash == NULL)
+  {
+    printf(RED "Trying to make a new root folder\n" reset);
+    return NULL;
+  }
+
+  int position = lastSlash - input_check;
+
+  strncpy(folder_name, input_check, position);
+  folder_name[position] = '/';
+  folder_name[position + 1] = '\0'; // Null-terminate the string
 
   strcpy(file_name, lastSlash + 1);
-
-  // Replace it with null character if found
 
   printf(GRN "Folder name is: %s\n" reset, folder_name);
   printf(GRN "File name is: %s\n" reset, file_name);
@@ -71,8 +84,54 @@ char *create(char *input)
   if ((myStruct = find(accessible_paths_hashmap, folder_name)) == NULL)
   {
     printf(RED "Folder not found\n" reset);
-    return RED "> NM : Folder not found" reset;
+    return NULL;
   }
+
+  return myStruct;
+}
+
+char *create(char *input)
+{
+  printf(GRN "Creating file %s\n" reset, input);
+  char *input_check;
+
+  // copy the input to a new string
+  input_check = (char *)malloc(1000 * sizeof(char));
+  strcpy(input_check, input);
+
+  ValueStruct *myStruct;
+  myStruct = check_existence(input_check);
+
+  if (check_existence(input_check) == NULL)
+  {
+    return RED "> NM : Invalid path or trying to make a file/folder in root\n" reset;
+  }
+
+  // // Find the last occurrence of '/'
+  // lastSlash = strrchr(input_check, '/');
+
+  // if (lastSlash == NULL)
+  // {
+  //   printf(RED "Invalid path\n" reset);
+  //   return RED "> NM : Invalid path" reset;
+  // }
+
+  // int position = lastSlash - input_check;
+
+  // strncpy(folder_name, input, position);
+  // folder_name[position] = '/'; // Null-terminate the string
+  // folder_name[position + 1] = '\0';
+
+  // strcpy(file_name, lastSlash + 1);
+
+  // // Replace it with null character if found
+
+  // ValueStruct *myStruct;
+  // if ((myStruct = find(accessible_paths_hashmap, folder_name)) == NULL)
+  // {
+  //   printf(RED "Folder not found\n" reset);
+  //   return RED "> NM : Folder not found" reset;
+  // }
 
   int sock = connect_to_ss(myStruct->ip, myStruct->nm_port);
   if (sock < 0)
@@ -104,6 +163,7 @@ char *create(char *input)
     printf(RED "Error in creating the file\n" reset);
     return RED "> NM : Error in creating the file" reset;
   }
+
 }
 
 char *delete_file(char *filename)
@@ -133,11 +193,17 @@ char *delete_file(char *filename)
   char *response = readMessage(sock);
   close(sock);
 
-  if (strcmp(response, "DELETED") == 0)
+  if (strcmp(response, "DELETED FILE") == 0)
   {
     printf(GRN "SS > File deleted successfully\n" reset);
     remove_key(accessible_paths_hashmap, filename);
     return GRN "> NM : File deleted successfully" reset;
+  }
+  else if (strcmp(response, "DELETED FOLDER") == 0)
+  {
+    printf(GRN "SS > Directory deleted successfully\n" reset);
+    remove_folder(accessible_paths_hashmap, filename);
+    return GRN "> NM : Directory deleted successfully" reset;
   }
   else
   {
@@ -204,7 +270,29 @@ char *read_write_getinfo_file(char *filename, char *operation)
 
 char *copy(char *filename1, char *filename2)
 {
+  // file1 is copied to file2 (this needs to be a directory)
   printf(GRN "Copying file %s to %s\n" reset, filename1, filename2);
+  ValueStruct *myStruct;
+  if ((myStruct = find(accessible_paths_hashmap, filename1)) == NULL)
+  {
+    printf(RED "File not found\n" reset);
+    return RED "> NM : File not found" reset;
+  }
+
+  ValueStruct *myStruct2;
+  if ((myStruct2 = find(accessible_paths_hashmap, filename2)) == NULL)
+  {
+    printf(RED "File not found\n" reset);
+    return RED "> NM : File not found" reset;
+  }
+
+  int sock = connect_to_ss(myStruct->ip, myStruct->nm_port);
+  if (sock < 0)
+  {
+    printf(RED "Error in connecting to the storage server\n" reset);
+    return RED "> NM : Error in connecting to the storage server" reset;
+  }
+
   return GRN "> NM : Copying the file" reset;
 }
 
@@ -219,7 +307,7 @@ char *LS()
   char *keys = get_all_keys(accessible_paths_hashmap);
   // printf("Keys are: %s\n", keys);
   char *response = (char *)malloc(1000);
-  strcpy(response, GRN "> NM : Listing files in the directory" reset);
+  strcpy(response, GRN "> NM : Listing all the accessible paths" reset);
   strcat(response, "\n");
   strcat(response, keys);
   return response;

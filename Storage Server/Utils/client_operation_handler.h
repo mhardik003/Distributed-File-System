@@ -16,8 +16,10 @@ void readFile(int sock, char **client_input_tokens);
 void writeFile(int sock, char **client_input_tokens, int num_tokens);
 void getInfo(int sock, char **client_input_tokens);
 void createFile(int sock, char **client_input_tokens);
-void deleteFile(int sock, char **client_input_tokens);
+void deleteFunction(int sock, char **client_input_tokens);
+void copyFile(int sock, char **client_input_tokens);
 void sendACK(char *message);
+int endsWithSlash(const char *str);
 
 void parseInput(char *input, int sock)
 {
@@ -59,7 +61,11 @@ void operational_handler(char **input_tokens, int num_tokens, int sock)
     }
     else if (strcmp(input_tokens[0], "DELETE") == 0)
     {
-        deleteFile(sock, input_tokens);
+        deleteFunction(sock, input_tokens);
+    }
+    else if (strcmp(input_tokens[0], "COPY") == 0)
+    {
+        copyFile(sock, input_tokens);
     }
     else
     {
@@ -74,56 +80,122 @@ void createFile(int sock, char **client_input_tokens)
     char *relativePath = (char *)calloc(1000, sizeof(char));
     char *file_name = (char *)calloc(1000, sizeof(char));
 
-    // Find the last occurrence of '\'
-    // relativePath = strrchr(client_input_tokens[1], '/');
-    // file_name = strrchr(client_input_tokens[1], '/');
-    // file_name = file_name + 1;
+    // check if the client_input_tokens[1] ends in a '/' or not
 
-    // if (relativePath != NULL)
-    // {
-    //     *relativePath = '\0';
-    // }
-
-    // char fullPath[1024]; // Adjust the size as needed
-    // fullPath[0] = '\0';
-    // strcat(fullPath, relativePath);
-    // strcat(fullPath, "/");
-    // strcat(fullPath, file_name);
-    // snprintf(fullPath, sizeof(fullPath), "%s%s", relativePath, file_name);
-
-    // Create and open the file
-    file = fopen(client_input_tokens[1], "w");
-    if (file == NULL)
+    if (endsWithSlash(client_input_tokens[1])) // make a directory
     {
-        perror("Error creating file");
-        sendMessage(sock, "-1");
+        // check if the directory already exists
+        if (access(client_input_tokens[1], F_OK) != -1)
+        {
+            printf(RED "Directory '%s' already exists.\n" reset, client_input_tokens[1]);
+            sendMessage(sock, "-1");
+            return;
+        }
+
+        if (mkdir(client_input_tokens[1], 0777) == -1)
+        {
+            perror(RED "Error creating directory" reset);
+            sendMessage(sock, "-1");
+            return;
+        }
+        printf(GRN "Directory '%s' created successfully.\n" reset, client_input_tokens[1]);
+        sendMessage(sock, "CREATED");
+        close(sock);
         return;
     }
+    else // make a file
+    {
+        // check if the file already exists
+        if (access(client_input_tokens[1], F_OK) != -1)
+        {
+            printf(RED "File '%s' already exists.\n" reset, client_input_tokens[1]);
+            sendMessage(sock, "-1");
+            return;
+        }
+        // Create and open the file
+        file = fopen(client_input_tokens[1], "w");
+        if (file == NULL)
+        {
+            perror(RED "Error creating file" reset);
+            sendMessage(sock, "-1");
+            return;
+        }
+        printf(GRN "File '%s' created successfully.\n" reset, client_input_tokens[1]);
 
-    printf(GRN"File '%s' created successfully.\n"reset, client_input_tokens[1]);
-
-    // Close the file
-    fclose(file);
-    sendMessage(sock, "CREATED");
-    close(sock);
-
-    return;
+        // Close the file
+        fclose(file);
+        sendMessage(sock, "CREATED");
+        close(sock);
+        return;
+    }
 }
 
-void deleteFile(int sock, char **client_input_tokens)
+void deleteDirectory(char *path)
 {
-    if (remove(client_input_tokens[1]) == 0)
+    DIR *d = opendir(path);
+    if (d)
     {
-        printf(GRN"File '%s' deleted successfully.\n"reset, client_input_tokens[1]);
-        sendMessage(sock, "DELETED");
-        close(sock);
+        struct dirent *dir;
+        while ((dir = readdir(d)) != NULL)
+        {
+            if (strcmp(dir->d_name, ".") != 0 && strcmp(dir->d_name, "..") != 0)
+            {
+                char *file_path = (char *)malloc(strlen(path) + strlen(dir->d_name) + 2);
+                sprintf(file_path, "%s/%s", path, dir->d_name);
+
+                struct stat statbuf;
+                if (!stat(file_path, &statbuf))
+                {
+                    if (S_ISDIR(statbuf.st_mode))
+                        deleteDirectory(file_path);
+                    else
+                        remove(file_path);
+                }
+                free(file_path);
+            }
+        }
+        closedir(d);
+    }
+    rmdir(path);
+}
+
+void deleteFile(char *path)
+{
+    if (remove(path) == 0)
+    {
+        printf(GRN "File '%s' deleted successfully.\n" reset, path);
     }
     else
     {
         perror("Error deleting file");
-        sendMessage(sock, "-1");
+    }
+}
+
+int endsWithSlash(const char *str)
+{
+    size_t len = strlen(str);
+    return (len > 0 && str[len - 1] == '/') ? 1 : 0;
+}
+
+void deleteFunction(int sock, char **client_input_tokens)
+{
+    // check if the input is a file or a folder
+    if (endsWithSlash(client_input_tokens[1]))
+    {
+        deleteDirectory(client_input_tokens[1]);
+        sendMessage(sock, "DELETED FOLDER");
         close(sock);
     }
+    else
+    {
+        deleteFile(client_input_tokens[1]);
+        sendMessage(sock, "DELETED FILE");
+        close(sock);
+    }
+}
+
+void copyFile(int sock, char **client_input_tokens)
+{
 }
 
 void readFile(int sock, char **client_input_tokens)
@@ -133,7 +205,7 @@ void readFile(int sock, char **client_input_tokens)
     long fileLen;
 
     // Open the file in read mode
-    printf(YEL"reading from the file $%s$\n"reset, client_input_tokens[1]);
+    printf(YEL "reading from the file $%s$\n" reset, client_input_tokens[1]);
     file = fopen(client_input_tokens[1], "rb");
     if (file == NULL)
     {
@@ -150,7 +222,7 @@ void readFile(int sock, char **client_input_tokens)
     buffer = (char *)malloc(fileLen + 1);
     if (!buffer)
     {
-        fprintf(stderr, RED"Memory allocation failed!\n"reset);
+        fprintf(stderr, RED "Memory allocation failed!\n" reset);
         fclose(file);
         return;
     }
@@ -163,7 +235,7 @@ void readFile(int sock, char **client_input_tokens)
     buffer[fileLen] = '\0';
 
     // Print the contents
-    printf(GRN"Client < \n%s\n"reset, buffer);
+    printf(GRN "Client < \n%s\n" reset, buffer);
     sendMessage(sock, buffer);
     close(sock);
 
@@ -187,7 +259,7 @@ void getInfo(int sock, char **client_input_tokens)
     // Get file status
     if (stat(client_input_tokens[1], &fileInfo) != 0)
     {
-        perror(RED"Error getting file info"reset);
+        perror(RED "Error getting file info" reset);
         return;
     }
 
@@ -212,7 +284,7 @@ void getInfo(int sock, char **client_input_tokens)
     strcat(message, "\n");
 
     // Print last access time
-    printf(CYN"Sending the following content to the client: \n"reset);
+    printf(CYN "Sending the following content to the client: \n" reset);
     printf("Last Accessed: %s", ctime(&fileInfo.st_atime));
     strcat(message, "Last Accessed: ");
     strcat(message, ctime(&fileInfo.st_atime));
@@ -275,7 +347,8 @@ void writeFile(int sock, char **client_input_tokens, int num_tokens)
     free(content);
 }
 
-void sendACK(char *message) {
+void sendACK(char *message)
+{
     int SS_NM_fd = createServerSocket();
 
     struct sockaddr_in SS_NM_connection;

@@ -79,6 +79,7 @@ char *readStorageServerMessage(int sock, char *ip_address)
   {
     return RED "NM > Error in receiving the message" reset;
   }
+  printf("SS > %s\n", buffer);
   if (strncmp(buffer, "ssinit", 6) == 0)
   {
     printf(GRN "%s" reset, buffer);
@@ -90,14 +91,14 @@ char *readStorageServerMessage(int sock, char *ip_address)
     char *ackToken = strtok(buffer, "\n");
     ackToken = strtok(NULL, "\n");
     char *ackPath = strtok(NULL, "\n");
-    printf(GRN "Recieved Acknowledgement from SS for %s operation\n" reset, ackToken);
-    if (strcmp(ackToken, "READ") || strcmp(ackToken, "GETINFO"))
+    printf(GRN "SS > Acknowledgement for '%s' operation\n" reset, ackToken);
+    if (strcmp(ackToken, "READ") == 0 || strcmp(ackToken, "GETINFO") == 0)
     {
       ValueStruct *myStruct = find(accessible_paths_hashmap, ackPath);
       myStruct->num_readers--;
       printf(MAG "One reader completed reading. Number of readers for %s is %d\n" reset, ackPath, myStruct->num_readers);
     }
-    else if (strcmp(ackToken, "WRITE"))
+    else if (strcmp(ackToken, "WRITE") == 0)
     {
       ValueStruct *myStruct = find(accessible_paths_hashmap, ackPath);
       myStruct->isWriting = 0;

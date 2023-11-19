@@ -1,3 +1,4 @@
 - On closing client, naming server crashes
+- Create directories
 - Test for large files
 - Update num readers and write bool
