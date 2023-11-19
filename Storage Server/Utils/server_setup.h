@@ -34,6 +34,15 @@ int createServerSocket()
         perror("Socket creation error");
         exit(EXIT_FAILURE);
     }
+
+    int opt = 1;
+    // Set SO_REUSEADDR to true
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+        perror("setsockopt(SO_REUSEADDR) failed");
+        close(server_fd);
+        exit(EXIT_FAILURE);
+    }
+
     return server_fd;
 }
 

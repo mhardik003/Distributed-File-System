@@ -104,6 +104,8 @@ void createFile(int sock, char **client_input_tokens)
         {
             printf(RED "Directory '%s' already exists.\n" reset, client_input_tokens[1]);
             sendMessage(sock, "-1");
+            close(sock);
+
             return;
         }
 
@@ -111,6 +113,8 @@ void createFile(int sock, char **client_input_tokens)
         {
             perror(RED "Error creating directory" reset);
             sendMessage(sock, "-1");
+            close(sock);
+
             return;
         }
         printf(GRN "Directory '%s' created successfully.\n" reset, client_input_tokens[1]);
@@ -125,6 +129,8 @@ void createFile(int sock, char **client_input_tokens)
         {
             printf(RED "File '%s' already exists.\n" reset, client_input_tokens[1]);
             sendMessage(sock, "-1");
+            close(sock);
+
             return;
         }
         // Create and open the file
@@ -133,6 +139,8 @@ void createFile(int sock, char **client_input_tokens)
         {
             perror(RED "Error creating file" reset);
             sendMessage(sock, "-1");
+            close(sock);
+
             return;
         }
         printf(GRN "File '%s' created successfully.\n" reset, client_input_tokens[1]);
@@ -220,7 +228,7 @@ void NMreadFile(int sock, char **NM_input_tokens)
     long fileLen;
 
     // Open the file in read mode
-    printf(YEL "Reading from the file '%s'\n" reset, NM_input_tokens[1]);
+    // printf(YEL "Reading from the file '%s'\n" reset, NM_input_tokens[1]);
 
     file = fopen(NM_input_tokens[1], "rb");
     if (file == NULL)
@@ -243,7 +251,7 @@ void NMreadFile(int sock, char **NM_input_tokens)
     // read the contents from the  file and store it in the buffer variable
     long bytesRead = 0;
     bytesRead = fread(buffer, 1, bufferSize, file);
-    printf("Contents of the file : %s\n", buffer);
+    // printf("Contents of the file : %s\n", buffer);
 
     // Read file contents into buffer
     sendMessage(sock, buffer); // Send the chunk
@@ -374,6 +382,8 @@ void createFolder(int sock, char **client_input_tokens)
     {
         printf(RED "Directory '%s' already exists.\n" reset, client_input_tokens[1]);
         sendMessage(sock, "-1");
+        close(sock);
+
         return;
     }
 
@@ -381,6 +391,8 @@ void createFolder(int sock, char **client_input_tokens)
     {
         perror(RED "Error creating directory" reset);
         sendMessage(sock, "-1");
+        close(sock);
+
         return;
     }
     printf(GRN "Directory '%s' created successfully.\n" reset, client_input_tokens[1]);

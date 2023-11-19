@@ -550,7 +550,7 @@ char *copy_directory(char *source, char *destination)
     }
   }
 
-  return "meow";
+  return "Done copying directories";
 }
 
 char *copy(char *filename1, char *filename2)

@@ -36,7 +36,7 @@ void bindServerSocket(int server_fd, struct sockaddr_in *address)
 
 void startListening(int server_fd)
 {
-  if (listen(server_fd, 3) < 0)
+  if (listen(server_fd, 5) < 0)
   {
     perror("listen");
     exit(EXIT_FAILURE);
