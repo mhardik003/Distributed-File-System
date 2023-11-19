@@ -28,22 +28,22 @@ void print_DFS_features()
     printf("1. Read a file\n");
     printf("Syntax: READ <path>\n\n");
 
-    printf("2. Get information of a file\n");
+    printf("2. Get information of a file/folder\n");
     printf("Syntax: GETINFO <path>\n\n");
 
     printf("3. Write to a file\n");
     printf("Syntax: WRITE <path> <text>\n\n");
 
-    printf("4. Create a directory\n");
+    printf("4. Create a directory/file\n");
     printf("Syntax: CREATE <path>\n\n");
 
-    printf("5. Delete a file or directory\n");
+    printf("5. Delete a directory/file\n");
     printf("Syntax: DELETE <path>\n\n");
 
     printf("6. Display all files and folders in a folder\n");
     printf("Syntax: LS <path>\n\n");
 
-    printf("7. Copy a file or directory to another filer or directory\n");
+    printf("7. Copy a directory/file to another filer or directory\n");
     printf("Syntax: COPY <source path> <destination path>\n\n" reset);
 }
 
@@ -59,7 +59,7 @@ int findAvailablePort()
         if (test_sock < 0)
         {
             perror("Socket creation error in findAvailablePort");
-            exit(EXIT_FAILURE);
+            // exit(EXIT_FAILURE);
         }
 
         memset(&test_addr, 0, sizeof(test_addr));
@@ -79,7 +79,7 @@ int findAvailablePort()
             {
                 perror("bind failed in findAvailablePort");
                 close(test_sock);
-                exit(EXIT_FAILURE);
+                // exit(EXIT_FAILURE);
             }
         }
         else
@@ -97,7 +97,7 @@ int createClientSocket() {
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock == -1) {
         perror("Socket creation failed");
-        exit(EXIT_FAILURE);
+        // exit(EXIT_FAILURE);
     }
 
     int opt = 1;
@@ -105,7 +105,7 @@ int createClientSocket() {
     if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
         perror("setsockopt(SO_REUSEADDR) failed");
         close(sock);
-        exit(EXIT_FAILURE);
+        // exit(EXIT_FAILURE);
     }
 
     return sock;
@@ -119,7 +119,7 @@ void bindClientSocket(int sock, struct sockaddr_in *cli_addr)
         printf("Billu bageele\n");
         perror("bind failed");
         close(sock);
-        exit(EXIT_FAILURE);
+        // exit(EXIT_FAILURE);
     }
 }
 
@@ -143,7 +143,7 @@ void connectToServer(int sock, struct sockaddr_in *serv_addr)
     {
         perror("Connection Failed");
         close(sock);
-        exit(EXIT_FAILURE);
+        // exit(EXIT_FAILURE);
     }
 }
 

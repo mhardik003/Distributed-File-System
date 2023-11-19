@@ -2,9 +2,9 @@
 
 int main()
 {
-    // SS_NM_PORT, SS_Client_PORT;
-    SS_NM_PORT = findAvailablePort();
-    SS_Client_PORT = findAvailablePort();
+
+    SS_NM_PORT = findAvailablePort();     // dynamically search for available ports and assign for storage server
+    SS_Client_PORT = findAvailablePort(); // dynamically search for available ports and assign for storage server
 
     if (SS_NM_PORT == -1 || SS_Client_PORT == -1)
     {
@@ -15,7 +15,7 @@ int main()
     printf("\nStorage Server Port for communication with naming server: %d\n", SS_NM_PORT);
     printf("Storage Server Port for communication with client: %d\n\n", SS_Client_PORT);
 
-    sendInfoToNM();
+    sendInfoToNM(); // Send the info to the naming server about the SS  (the accessible paths and the ports)
 
     int SS_client_fd, SS_NM_fd, temp_fd;
     struct sockaddr_in SS_client_address, SS_NM_address;

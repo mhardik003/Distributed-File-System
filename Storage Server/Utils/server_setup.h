@@ -32,7 +32,7 @@ int createServerSocket()
     if (server_fd <= 0)
     {
         perror("Socket creation error");
-        exit(EXIT_FAILURE);
+        // exit(EXIT_FAILURE);
     }
 
     int opt = 1;
@@ -40,7 +40,7 @@ int createServerSocket()
     if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
         perror("setsockopt(SO_REUSEADDR) failed");
         close(server_fd);
-        exit(EXIT_FAILURE);
+        // exit(EXIT_FAILURE);
     }
 
     return server_fd;
@@ -58,7 +58,7 @@ int findAvailablePort()
         if (test_sock < 0)
         {
             perror("Socket creation error in findAvailablePort");
-            exit(EXIT_FAILURE);
+            // exit(EXIT_FAILURE);
         }
 
         memset(&test_addr, 0, sizeof(test_addr));
@@ -78,7 +78,7 @@ int findAvailablePort()
             {
                 perror("bind failed in findAvailablePort");
                 close(test_sock);
-                exit(EXIT_FAILURE);
+                // exit(EXIT_FAILURE);
             }
         }
         else
@@ -98,7 +98,7 @@ void bindServerSocket(int server_fd, struct sockaddr_in *address)
     {
         perror("bind failed");
         close(server_fd);
-        exit(EXIT_FAILURE);
+        // exit(EXIT_FAILURE);
     }
 }
 
@@ -108,7 +108,7 @@ void startListening(int server_fd)
     {
         // printf("meow");
         perror("listen");
-        exit(EXIT_FAILURE);
+        // exit(EXIT_FAILURE);
     }
 }
 
@@ -119,7 +119,7 @@ int acceptConnection(int server_fd, struct sockaddr_in *address, char *ip_buffer
     if (new_socket < 0)
     {
         perror("accept");
-        exit(EXIT_FAILURE);
+        // exit(EXIT_FAILURE);
     }
     // Copy the IP address to the provided buffer
     strncpy(ip_buffer, inet_ntoa(address->sin_addr), INET_ADDRSTRLEN);
@@ -140,7 +140,7 @@ void connectToServer(int sock, struct sockaddr_in *serv_addr)
     {
         perror("Connection Failed");
         close(sock);
-        exit(EXIT_FAILURE);
+        // exit(EXIT_FAILURE);
     }
 }
 

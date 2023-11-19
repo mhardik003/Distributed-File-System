@@ -75,7 +75,7 @@ void *listenForClients(void *NM_client_fd)
         if (new_socket < 0)
         {
             perror("accept");
-            exit(EXIT_FAILURE);
+            // exit(EXIT_FAILURE);
         }
 
         else
@@ -105,7 +105,7 @@ void *listenFromNameServer(void *NM_SS_fd)
         if (new_socket < 0)
         {
             perror("accept");
-            exit(EXIT_FAILURE);
+            // exit(EXIT_FAILURE);
         }
 
         else

@@ -1,6 +1,14 @@
-# OSN Course project (Team 05)
+# DISTRIBUTED FILE SYSTEM
 
-## Authors
+### Naming Server
+* 
+
+
+
+
+## Developers
+
+Team 05
 
 1. **Name**: Arjun Dosajh  
    **Roll Number**: 2021113016

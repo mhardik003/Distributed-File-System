@@ -1,4 +1,4 @@
-- On closing client, naming server crashes
+- On closing client, naming server crashes: DONE
 - Create directories : DONE
 - Test for large files
 - Update num readers and write bool : DONE

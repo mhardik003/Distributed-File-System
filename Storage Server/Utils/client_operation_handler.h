@@ -461,7 +461,7 @@ void writeFile(int sock, char **client_input_tokens, int num_tokens)
     fclose(file);
 
     printf("Text appended successfully.\n");
-    sendMessage(sock, "Text appended successfully.\n");
+    sendMessage(sock, "Text appended successfully.");
     close(sock);
 
     // send ACK to naming server

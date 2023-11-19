@@ -9,7 +9,7 @@ int createServerSocket()
   if (sock == -1)
   {
     perror("Socket creation failed");
-    exit(EXIT_FAILURE);
+    // exit(EXIT_FAILURE);
   }
 
   int opt = 1;
@@ -18,7 +18,7 @@ int createServerSocket()
   {
     perror("setsockopt(SO_REUSEADDR) failed");
     close(sock);
-    exit(EXIT_FAILURE);
+    // exit(EXIT_FAILURE);
   }
 
   return sock;
@@ -30,7 +30,7 @@ void bindServerSocket(int server_fd, struct sockaddr_in *address)
   {
     perror("bind failed");
     close(server_fd);
-    exit(EXIT_FAILURE);
+    // exit(EXIT_FAILURE);
   }
 }
 
@@ -39,7 +39,7 @@ void startListening(int server_fd)
   if (listen(server_fd, 5) < 0)
   {
     perror("listen");
-    exit(EXIT_FAILURE);
+    // exit(EXIT_FAILURE);
   }
 }
 
@@ -50,7 +50,7 @@ int acceptConnection(int server_fd, struct sockaddr_in *address, char *ip_buffer
   if (new_socket < 0)
   {
     perror("accept");
-    exit(EXIT_FAILURE);
+    // exit(EXIT_FAILURE);
   }
 
   // Copy the IP address to the provided buffer
@@ -96,7 +96,7 @@ void connectToServer(int sock, struct sockaddr_in *serv_addr)
   {
     perror(RED "Connection Failed" reset);
     close(sock);
-    exit(EXIT_FAILURE);
+    // exit(EXIT_FAILURE);
   }
 }
 
