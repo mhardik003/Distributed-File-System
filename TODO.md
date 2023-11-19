@@ -1,4 +1,5 @@
 - On closing client, naming server crashes
-- Create directories
+- Create directories : DONE
 - Test for large files
-- Update num readers and write bool
+- Update num readers and write bool : DONE
+- Not able to copy directory between two different IPs
