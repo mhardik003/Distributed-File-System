@@ -60,9 +60,34 @@ void operation_handler(char *nm_response, char *client_input)
 
         printf(YEL "SS < %s\n" reset, client_input);
         sendMessage(sock, client_input);
-        char *SS_response = readMessage(sock);
-        printf(GRN "SS > %s\n" reset, SS_response);
-        close(sock);
+
+        // if the operation is reads then we have to gather the whhole response from the storage server in chunks
+        if (strncmp(client_input, "READ", 4) == 0)
+        {
+            printf(GRN "SS > ");
+            while (1)
+            {
+                char *SS_response = readMessage(sock);
+                int resp_len = strlen(SS_response);
+
+                if (strncmp(SS_response + resp_len - 3, "END", 3) == 0)
+                {
+                    SS_response[resp_len - 3] = '\0';
+                    printf("%s" reset, SS_response);
+                    break;
+                }
+
+                printf("%s", SS_response);
+            }
+            printf("\n");
+            close(sock);
+        }
+        else //  for writing or getinfo
+        {
+            char *SS_response = readMessage(sock);
+            printf(GRN "SS > %s\n" reset, SS_response);
+            close(sock);
+        }
     }
 
     else

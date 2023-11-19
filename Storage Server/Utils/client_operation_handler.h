@@ -205,7 +205,7 @@ void readFile(int sock, char **client_input_tokens)
     long fileLen;
 
     // Open the file in read mode
-    printf(YEL "reading from the file $%s$\n" reset, client_input_tokens[1]);
+    printf(YEL "reading from the file '%s'\n" reset, client_input_tokens[1]);
     file = fopen(client_input_tokens[1], "rb");
     if (file == NULL)
     {
@@ -213,13 +213,10 @@ void readFile(int sock, char **client_input_tokens)
         return;
     }
 
-    // Get the length of the file
-    fseek(file, 0, SEEK_END);
-    fileLen = ftell(file);
-    fseek(file, 0, SEEK_SET);
-
     // Allocate memory for the buffer
-    buffer = (char *)malloc(fileLen + 1);
+    size_t bufferSize = 512;
+    buffer = (char *)malloc(bufferSize);
+
     if (!buffer)
     {
         fprintf(stderr, RED "Memory allocation failed!\n" reset);
@@ -227,17 +224,20 @@ void readFile(int sock, char **client_input_tokens)
         return;
     }
 
+    long bytesRead = 0;
     // Read file contents into buffer
-    fread(buffer, fileLen, 1, file);
+    while ((bytesRead = fread(buffer, 1, bufferSize, file)) > 0)
+    {
+        buffer[bytesRead] = '\0';
+        sendMessage(sock, buffer); // Send the chunk
+    }
     fclose(file); // Close the file
 
-    // Null-terminate the buffer
-    buffer[fileLen] = '\0';
-
-    // Print the contents
-    printf(GRN "Client < \n%s\n" reset, buffer);
-    sendMessage(sock, buffer);
+    sendMessage(sock, "END"); // Send the end of file message
     close(sock);
+    // Print the contents
+    printf(GRN "SS > Sent the contents to the client! \n" reset);
+    // sendMessage(sock, buffer);
 
     // send ACK to name server
     char *ackMessage = (char *)malloc(1000 * sizeof(char));
