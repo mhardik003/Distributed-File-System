@@ -6,8 +6,8 @@
 #define CLIENT_INPUT_MAX_LENGTH 1000
 #define MAX_WORD_SIZE 100
 
-void operation_handler(char *nm_response, char *client_input);
 int connect_to_ss(char *ip, int port);
+void operation_handler(char *nm_response, char *client_input);
 
 int connect_to_ss(char *ip, int port)
 {
@@ -48,9 +48,6 @@ void operation_handler(char *nm_response, char *client_input)
         token = strtok(NULL, "\n");
         int port;
         sscanf(token, "client_port:%d", &port);
-        // printf("IP is: %s\n", ip);
-        // printf("Port is: %d\n", port);
-        // printf("Sending request to the storage server at the IP address %s and port %d\n", ip, port);
 
         // create a new socket for communication with the storage server
         int sock = connect_to_ss(ip, port);
