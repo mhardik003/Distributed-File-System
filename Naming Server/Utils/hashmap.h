@@ -24,11 +24,6 @@ typedef struct HashmapItem
 } HashmapItem;
 
 // Function Declarations
-void init_hashmap(HashmapItem *hashmap[]);
-void cleanup_hashmap(HashmapItem *hashmap[]);
-void insert(HashmapItem *hashmap[], const char *key, ValueStruct value);
-ValueStruct *find(HashmapItem *hashmap[], const char *key);
-void remove_key(HashmapItem *hashmap[], const char *key);
 
 #define MAX_HASHMAP_SIZE 1000
 
@@ -160,6 +155,71 @@ char *get_all_keys(HashmapItem *hashmap[])
         }
     }
     return all_keys;
+}
+
+char **get_dest_contents(HashmapItem *hashmap[], char *folder)
+{
+    // get all the keys that start with the folder
+    char **contents = (char **)malloc(MAX_HASHMAP_SIZE * sizeof(char *));
+    int num_contents = 0;
+    size_t folder_len = strlen(folder);
+    for (int i = 0; i < HASH_MAP_SIZE; ++i)
+    {
+        HashmapItem *item = hashmap[i];
+        while (item != NULL)
+        {
+            // find out if the key starts with the folder
+            if (strncmp(item->key, folder, strlen(folder)) == 0 && strcmp(item->key, folder) != 0)
+            {
+                contents[num_contents] = (char *)malloc(MAX_HASHMAP_SIZE * sizeof(char));
+                strcpy(contents[num_contents], item->key + folder_len);
+                num_contents++;
+            }
+            item = item->next;
+        }
+    }
+    return contents;
+}
+
+char **get_contents(HashmapItem *hashmap[], char *folder)
+{
+    // get all the keys that start with the folder
+    char **contents = (char **)malloc(MAX_HASHMAP_SIZE * sizeof(char *));
+    int num_contents = 0;
+    size_t folder_len = strlen(folder);
+    for (int i = 0; i < HASH_MAP_SIZE; ++i)
+    {
+        HashmapItem *item = hashmap[i];
+        while (item != NULL)
+        {
+            // find out if the key starts with the folder
+            if (strncmp(item->key, folder, strlen(folder)) == 0 && strcmp(item->key, folder) != 0)
+            {
+                contents[num_contents] = (char *)malloc(MAX_HASHMAP_SIZE * sizeof(char));
+                strcpy(contents[num_contents], item->key);
+                num_contents++;
+            }
+            item = item->next;
+        }
+    }
+    return contents;
+}
+
+void sort_contents(char **contents, int num_contents)
+{
+    // sort the contents
+    for (int i = 0; i < num_contents; ++i)
+    {
+        for (int j = i + 1; j < num_contents; ++j)
+        {
+            if (strcmp(contents[i], contents[j]) > 0)
+            {
+                char *temp = contents[i];
+                contents[i] = contents[j];
+                contents[j] = temp;
+            }
+        }
+    }
 }
 
 #endif // HASHMAP_H

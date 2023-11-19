@@ -163,7 +163,6 @@ char *create(char *input)
     printf(RED "Error in creating the file\n" reset);
     return RED "> NM : Error in creating the file" reset;
   }
-
 }
 
 char *delete_file(char *filename)
@@ -262,11 +261,297 @@ char *read_write_getinfo_file(char *filename, char *operation)
   return response_final;
 }
 
-// char *write_file(char *filename, char *data)
-// {
-//   printf(GRN "Writing '%s' to file %s\n" reset, data, filename);
-//   return GRN "Writing to the file" reset;
-// }
+char *create_file_in_destination_server(ValueStruct *SS2, char *destination_path)
+{
+  // connect to SS2 to create the file there
+
+  char *buffer = (char *)malloc(1024 * sizeof(char));
+  int sock2 = connect_to_ss(SS2->ip, SS2->nm_port);
+  // create the file in destination server
+  strcpy(buffer, "CREATE ");
+  strcat(buffer, destination_path);
+
+  printf("SS < %s\n", buffer);
+  sendMessage(sock2, buffer);
+
+  char *response = readMessage(sock2);
+  if (strcmp(response, "CREATED") == 0)
+  {
+    printf(GRN "SS > File created successfully in the destination SS\n" reset);
+  }
+  else
+  {
+    printf(RED "Error in creating the file\n" reset);
+    return RED "> NM : Error in creating the file" reset;
+  }
+
+  ValueStruct vs = {SS2->ip, SS2->nm_port, SS2->client_port, 0, 0};
+  insert(accessible_paths_hashmap, destination_path, vs); // insert the path and the value struct in the hashmap for the destination SS
+
+  printf(GRN "SS > %s\n" reset, response);
+  printf("Closing the socket\n");
+  close(sock2);
+}
+
+char *create_folder_in_destination_server(ValueStruct *SS2, char *destination_path)
+{
+  // connect to SS2 to create the folder there
+  char *foldername = (char *)malloc(1024 * sizeof(char));
+  char *buffer = (char *)malloc(1024 * sizeof(char));
+  char *tempSourcePath = (char *)malloc(1024 * sizeof(char));
+  int sock2 = connect_to_ss(SS2->ip, SS2->nm_port);
+  // create the file in destination server
+  strcpy(buffer, "CREATEFOLDER ");
+  strcat(buffer, destination_path);
+
+  printf("SS < %s\n", buffer);
+  sendMessage(sock2, buffer);
+
+  char *response = readMessage(sock2);
+  if (strcmp(response, "CREATED") == 0)
+  {
+    printf(GRN "SS > File created successfully in the destination SS\n" reset);
+  }
+  else
+  {
+    printf(RED "Error in creating the file\n" reset);
+    return RED "> NM : Error in creating the file" reset;
+  }
+
+  // Append the destination+foldername to the hashmap with the ip and port of the destination SS
+  ValueStruct vs = {SS2->ip, SS2->nm_port, SS2->client_port, 0, 0};
+  insert(accessible_paths_hashmap, destination_path, vs); // insert the path and the value struct in the hashmap for the destination SS
+
+  printf(GRN "SS > %s\n" reset, response);
+  printf("Closing the socket\n");
+  close(sock2);
+}
+
+char *read_and_save_contents_from_source_server(ValueStruct *SS1, char *source)
+{
+  // SS1 is the source server
+  char *filename = (char *)malloc(1024 * sizeof(char));
+  char *buffer = (char *)malloc(1024);
+  char *tempSourcePath = (char *)malloc(1024 * sizeof(char));
+  int sock1 = connect_to_ss(SS1->ip, SS1->nm_port);
+
+  strcpy(tempSourcePath, source);
+
+  filename = strrchr(tempSourcePath, '/');
+  filename++;
+  strcat(buffer, filename);
+
+  // empty the contents of the buffer
+  memset(buffer, 0, sizeof(buffer));
+
+  strcat(filename, "_temp");
+  FILE *fp = fopen(filename, "w");
+  if (fp == NULL)
+  {
+    printf(RED "Error in creating the temporary file\n" reset);
+    return RED "> NM : Error in creating the temporary file" reset;
+  }
+  printf("Created the temporary file in the NM\n");
+
+  strcpy(buffer, "NMREAD ");
+  printf("The source path is  : %s", source);
+  strcat(buffer, source);
+  printf("SS < %s\n", buffer);
+  sendMessage(sock1, buffer);
+
+  // read the file from SS1 in chunks and store it in a temporary_file
+  printf(GRN "SS > ");
+  while (1)
+  {
+    char *SS_response = readMessage(sock1);
+    puts(SS_response);
+    int resp_len = strlen(SS_response);
+
+    if (strncmp(SS_response + resp_len - 3, "END", 3) == 0)
+    {
+      SS_response[resp_len - 3] = '\0';
+      // printf("%s" reset, SS_response);
+      fputs(SS_response, fp);
+      break;
+    }
+    // append the contents to the temporary file
+    // fprintf(fp, "%s", SS_response);
+    fputs(SS_response, fp);
+  }
+  printf("\n");
+  close(sock1);
+  fclose(fp);
+
+  return "NM > Created file in destination server";
+}
+
+char *write_contents_to_destination_server(ValueStruct *SS2, char *destination_path, char *source)
+{
+  char *filename = (char *)malloc(1024 * sizeof(char));
+  char *message_to_ss = (char *)malloc(1024 * sizeof(char));
+  char *tempSourcePath = (char *)malloc(1024);
+  int sock1 = connect_to_ss(SS2->ip, SS2->nm_port);
+
+  // request to write to destination from SS2
+  message_to_ss[0] = '\0'; // empty the message_to_ss
+
+  strcpy(message_to_ss, "NMWRITE ");
+  strcat(message_to_ss, destination_path);
+  strcat(message_to_ss, " ");
+
+  strcpy(tempSourcePath, source);
+
+  filename = strrchr(tempSourcePath, '/');
+  filename++;
+  // strcat(message_to_ss, filename);
+  strcat(filename, "_temp");
+
+  printf("Filename is: %s", filename);
+
+  // read and store the filecontents in a string
+  char *file_contents = (char *)malloc(10000 * sizeof(char));
+  FILE *fp = fopen(filename, "r");
+  if (fp == NULL)
+  {
+    printf(RED "Error in opening the temporary file\n" reset);
+    return RED "> NM : Error in opening the temporary file" reset;
+  }
+  printf("Opened the temporary file in the NM\n");
+
+  char *line = (char *)malloc(1024);
+  size_t len = 0;
+  ssize_t read;
+
+  while (fgets(line, 1024, fp) != NULL)
+  {
+    // Check for message_to_ss overflow
+    if (strlen(message_to_ss) + strlen(line) >= 10000)
+    {
+      printf("message_to_ss overflow - file is too large\n");
+      break;
+    }
+    strcat(message_to_ss, line); // Append the line to the buffer
+  }
+
+  printf("Message to be sent to mihika: %s", message_to_ss);
+
+  sendMessage(sock1, message_to_ss);
+  fclose(fp);
+
+  memset(message_to_ss, 0, sizeof(message_to_ss));
+  char *response = readMessage(sock1);
+  printf("Response from mihika server: %s", response);
+  close(sock1);
+
+  // delete the temporary file
+  remove(filename);
+
+  if (strcmp(response, "WRITTEN") == 0)
+  {
+    printf(GRN "SS > File copied successfully\n" reset);
+    return GRN "> NM : File copied successfully" reset;
+  }
+  return RED "Error in copying" reset;
+}
+
+char *copy_file(char *source, char *destination)
+{
+  ValueStruct *SS1;
+  ValueStruct *SS2;
+  char *destination_path = (char *)malloc(1000 * sizeof(char));
+  char *fileName = (char *)malloc(1024 * sizeof(char));
+  char *tempSourcePath = (char *)malloc(1024 * sizeof(char));
+
+  strcpy(destination_path, destination);
+
+  strcpy(tempSourcePath, source);
+
+  fileName = strrchr(tempSourcePath, '/');
+  fileName++;
+
+  strcat(destination_path, fileName);
+
+  SS1 = find(accessible_paths_hashmap, source);
+  SS2 = find(accessible_paths_hashmap, destination);
+
+  // Create empty file in the destination server
+  create_file_in_destination_server(SS2, destination_path);
+
+  // connect to SS1 to read the contents of the file to be copied
+  read_and_save_contents_from_source_server(SS1, source);
+
+  // connect to SS2 to write the contents from the temporary file to the destination file path
+  write_contents_to_destination_server(SS2, destination_path, source);
+}
+
+char *copy_directory(char *source, char *destination)
+{
+  ValueStruct *SS1;
+  ValueStruct *SS2;
+  char *temp = (char *)malloc(1024);
+
+  SS1 = find(accessible_paths_hashmap, source);
+  SS2 = find(accessible_paths_hashmap, destination);
+
+  // get the contents of the source folder
+  char **contents = get_contents(accessible_paths_hashmap, source);
+  char **dest_contents = get_dest_contents(accessible_paths_hashmap, source);
+  int num_contents = 0;
+
+  // print the contents of the folder
+  for (int i = 0; contents[i] != NULL; i++)
+  {
+    // printf("%s\n", contents[i]);
+    num_contents++;
+  }
+
+  // Append the destination path to the contents
+  printf(CYN "After appending the destination path : \n" reset);
+  for (int i = 0; dest_contents[i] != NULL; i++)
+  {
+    strcpy(temp, destination);
+    strcat(temp, dest_contents[i]);
+    strcpy(dest_contents[i], temp);
+    printf("%s\n", dest_contents[i]);
+  }
+  sort_contents(contents, num_contents);
+  sort_contents(dest_contents, num_contents);
+
+  printf(CYN "After sorting the source contents are : \n" reset);
+  for (int i = 0; contents[i] != NULL; i++)
+  {
+    printf("%s\n", contents[i]);
+  }
+
+  printf(CYN "After sorting the destination contents are : \n" reset);
+  for (int i = 0; dest_contents[i] != NULL; i++)
+  {
+    printf("%s\n", dest_contents[i]);
+  }
+
+  //
+  //
+  //
+  //
+  //
+
+  // make the relevant files and folders on the destination paths
+  for (int i = 0; dest_contents[i] != NULL; i++)
+  {
+    if (dest_contents[i][strlen(dest_contents[i]) - 1] == '/')
+    {
+      create_folder_in_destination_server(SS2, dest_contents[i]);
+    }
+    else
+    {
+      create_file_in_destination_server(SS2, dest_contents[i]);
+      read_and_save_contents_from_source_server(SS1, contents[i]);
+      write_contents_to_destination_server(SS2, dest_contents[i], contents[i]);
+    }
+  }
+
+  return "meow";
+}
 
 char *copy(char *filename1, char *filename2)
 {
@@ -286,12 +571,23 @@ char *copy(char *filename1, char *filename2)
     return RED "> NM : File not found" reset;
   }
 
-  int sock = connect_to_ss(myStruct->ip, myStruct->nm_port);
-  if (sock < 0)
+  // check if the filenam1 ends in a '/'
+  if (filename1[strlen(filename1) - 1] != '/')
   {
-    printf(RED "Error in connecting to the storage server\n" reset);
-    return RED "> NM : Error in connecting to the storage server" reset;
+    return copy_file(filename1, filename2);
   }
+
+  else
+  {
+    return copy_directory(filename1, filename2);
+  }
+
+  // int sock = connect_to_ss(myStruct->ip, myStruct->nm_port);
+  // if (sock < 0)
+  // {
+  //   printf(RED "Error in connecting to the storage server\n" reset);
+  //   return RED "> NM : Error in connecting to the storage server" reset;
+  // }
 
   return GRN "> NM : Copying the file" reset;
 }

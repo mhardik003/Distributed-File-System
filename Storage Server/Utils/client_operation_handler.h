@@ -20,6 +20,9 @@ void deleteFunction(int sock, char **client_input_tokens);
 void copyFile(int sock, char **client_input_tokens);
 void sendACK(char *message);
 int endsWithSlash(const char *str);
+void NMreadFile(int sock, char **NM_input_tokens);
+void NMwriteFile(int sock, char **client_input_tokens, int num_tokens);
+void createFolder(int sock, char **input_tokens);
 
 void parseInput(char *input, int sock)
 {
@@ -47,9 +50,17 @@ void operational_handler(char **input_tokens, int num_tokens, int sock)
     {
         readFile(sock, input_tokens);
     }
+    if (strcmp(input_tokens[0], "NMREAD") == 0)
+    {
+        NMreadFile(sock, input_tokens);
+    }
     else if (strcmp(input_tokens[0], "WRITE") == 0)
     {
         writeFile(sock, input_tokens, num_tokens);
+    }
+    else if (strcmp(input_tokens[0], "NMWRITE") == 0)
+    {
+        NMwriteFile(sock, input_tokens, num_tokens);
     }
     else if (strcmp(input_tokens[0], "GETINFO") == 0)
     {
@@ -58,6 +69,10 @@ void operational_handler(char **input_tokens, int num_tokens, int sock)
     else if (strcmp(input_tokens[0], "CREATE") == 0)
     {
         createFile(sock, input_tokens);
+    }
+    else if (strcmp(input_tokens[0], "CREATEFOLDER") == 0)
+    {
+        createFolder(sock, input_tokens);
     }
     else if (strcmp(input_tokens[0], "DELETE") == 0)
     {
@@ -198,6 +213,48 @@ void copyFile(int sock, char **client_input_tokens)
 {
 }
 
+void NMreadFile(int sock, char **NM_input_tokens)
+{
+    FILE *file;
+    char *buffer;
+    long fileLen;
+
+    // Open the file in read mode
+    printf(YEL "Reading from the file '%s'\n" reset, NM_input_tokens[1]);
+
+    file = fopen(NM_input_tokens[1], "rb");
+    if (file == NULL)
+    {
+        perror("Error opening file");
+        return;
+    }
+
+    // Allocate memory for the buffer
+    size_t bufferSize = 512;
+    buffer = (char *)malloc(bufferSize);
+
+    if (!buffer)
+    {
+        fprintf(stderr, RED "Memory allocation failed!\n" reset);
+        fclose(file);
+        return;
+    }
+
+    // read the contents from the  file and store it in the buffer variable
+    long bytesRead = 0;
+    bytesRead = fread(buffer, 1, bufferSize, file);
+    printf("Contents of the file : %s\n", buffer);
+
+    // Read file contents into buffer
+    sendMessage(sock, buffer); // Send the chunk
+    fclose(file);              // Close the file
+
+    sendMessage(sock, "END"); // Send the end of file message
+    close(sock);
+    // Print the contents
+    printf(GRN "SS > Sent the contents to the NM! \n" reset);
+}
+
 void readFile(int sock, char **client_input_tokens)
 {
     FILE *file;
@@ -305,6 +362,64 @@ void getInfo(int sock, char **client_input_tokens)
     strcat(ackMessage, client_input_tokens[1]);
     sendACK(ackMessage);
     free(message);
+}
+
+void createFolder(int sock, char **client_input_tokens)
+{
+    // check if the client_input_tokens[1] ends in a '/' or not
+
+    // check if the directory already exists
+    printf("Making a folder %s\n", client_input_tokens[1]);
+    if (access(client_input_tokens[1], F_OK) != -1)
+    {
+        printf(RED "Directory '%s' already exists.\n" reset, client_input_tokens[1]);
+        sendMessage(sock, "-1");
+        return;
+    }
+
+    if (mkdir(client_input_tokens[1], 0777) == -1)
+    {
+        perror(RED "Error creating directory" reset);
+        sendMessage(sock, "-1");
+        return;
+    }
+    printf(GRN "Directory '%s' created successfully.\n" reset, client_input_tokens[1]);
+    sendMessage(sock, "CREATED");
+    close(sock);
+    return;
+}
+
+void NMwriteFile(int sock, char **client_input_tokens, int num_tokens)
+{
+    FILE *file;
+    char *content = (char *)malloc(1000 * sizeof(char));
+    content[0] = '\0';
+
+    for (int i = 2; i < num_tokens; i++)
+    {
+        strcat(content, " ");
+        strcat(content, client_input_tokens[i]);
+    }
+    printf("Writing to the file $%s$\n", client_input_tokens[1]);
+    // Open the file in append mode
+    file = fopen(client_input_tokens[1], "a");
+    if (file == NULL)
+    {
+        perror("Error opening file");
+        return;
+    }
+
+    // Append the text to the file
+    fputs(content, file);
+
+    // Close the file
+    fclose(file);
+
+    printf("Text written successfully.\n");
+    sendMessage(sock, "WRITTEN");
+    close(sock);
+
+    free(content);
 }
 
 void writeFile(int sock, char **client_input_tokens, int num_tokens)

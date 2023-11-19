@@ -86,7 +86,7 @@ void getSelectedPaths(char *paths, char *selectedPaths)
     }
     else
     {
-        printf(BLU "Enter the indices of the paths you want to select:\n" reset);
+        printf(BLU "Enter the indices of the paths you want to select: " reset);
         for (int i = 0; i < num; i++)
         {
             scanf("%d", &index);
