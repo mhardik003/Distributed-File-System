@@ -166,7 +166,7 @@ void *handleStorageServerConnection(void *arg)
   if (num_storage_servers == 3)
   {
     printf("Starting to create the backups now. \n");
-    backup_init(); // initialize and complete the backups of the 3 servers
+    // backup_init(); // initialize and complete the backups of the 3 servers
   }
   return NULL;
 }
