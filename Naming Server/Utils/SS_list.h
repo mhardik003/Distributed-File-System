@@ -1,20 +1,25 @@
+#ifndef SS_LIST_H
+#define SS_LIST_H
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "utils.h"
+
 // Define the Node structure
-typedef struct Node
+typedef struct ListNode
 {
     char ip[16]; // To store the IP address
     int nm_port; // To store the Port number
     int client_port;
-    struct Node *next;
-} Node;
+    struct ListNode *next;
+} ListNode;
 
 // Function to create a new node
-Node *createNode(const char *ip, int nm_port, int client_port)
+ListNode *createListNode(const char *ip, int nm_port, int client_port)
 {
-    Node *newNode = (Node *)malloc(sizeof(Node));
+    ListNode *newNode = (ListNode *)malloc(sizeof(ListNode));
     if (newNode == NULL)
     {
         printf("Memory allocation failed\n");
@@ -29,17 +34,17 @@ Node *createNode(const char *ip, int nm_port, int client_port)
 }
 
 // Function to insert a node at the beginning of the list
-void insertNode(Node **head, const char *ip, int nm_port, int client_port)
+void insertNode(ListNode **head, const char *ip, int nm_port, int client_port)
 {
-    Node *newNode = createNode(ip, nm_port, client_port);
+    ListNode *newNode = createListNode(ip, nm_port, client_port);
     newNode->next = *head;
     *head = newNode;
 }
 
 // Function to delete a node by IP and port
-void deleteNode(Node **head, const char *ip, int nm_port)
+void deleteNode(ListNode **head, const char *ip, int nm_port)
 {
-    Node *temp = *head, *prev = NULL;
+    ListNode *temp = *head, *prev = NULL;
 
     // If head node itself holds the key
     if (temp != NULL && strcmp(temp->ip, ip) == 0 && temp->nm_port == nm_port)
@@ -66,7 +71,7 @@ void deleteNode(Node **head, const char *ip, int nm_port)
 }
 
 // Function to display the list
-void displayList(Node *node)
+void displayList(ListNode *node)
 {
     while (node != NULL)
     {
@@ -91,3 +96,5 @@ void displayList(Node *node)
 
 //     return 0;
 // }
+
+#endif

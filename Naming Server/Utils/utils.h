@@ -10,6 +10,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <semaphore.h>
+#include <stdarg.h>
 
 #define GRN "\e[0;32m"
 #define MAG "\e[0;35m"
@@ -29,6 +31,7 @@ int NM_client_fd;
 int NM_SS_fd;
 
 #include "hashmap.h"
+#include "LRUCaching.h"
 #include "SS_list.h"
 
 typedef struct
@@ -39,9 +42,27 @@ typedef struct
 
 static HashmapItem *accessible_paths_hashmap[HASH_MAP_SIZE];     // stores the list of accessible paths and their corresponding values  (ip, port, num_readers, isWriting)
 static HashmapItem *bkp_accessible_paths_hashmap[HASH_MAP_SIZE]; // stores the list of accessible paths of the backup naming server and their corresponding values  (ip, port, num_readers, isWriting)
+static LRUCache *cache;                                           // stores the list of recently accessed paths and their corresponding values  (ip, port, num_readers, isWriting)
 
-Node* head_list = NULL; // head of the list of storage servers
+ListNode* head_list = NULL; // head of the list of storage servers
 
+void custom_print(const char *format, ...) {
+    va_list args;
+    FILE *file = fopen("nm_logs.log", "a");
+
+    // Print to stdout (terminal)
+    va_start(args, format);
+    vprintf(format, args);
+    va_end(args);
+
+    // Print to file
+    va_start(args, format);
+    vfprintf(file, format, args);
+    va_end(args);
+    fclose(file);
+}
+
+#define printf(format, ...) custom_print(format, ##__VA_ARGS__)
 
 // User defined headers
 #include "server_setup.h"

@@ -37,7 +37,8 @@ int createServerSocket()
 
     int opt = 1;
     // Set SO_REUSEADDR to true
-    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
+    {
         perror("setsockopt(SO_REUSEADDR) failed");
         close(server_fd);
         // exit(EXIT_FAILURE);
@@ -232,9 +233,12 @@ void sendInfoToNM()
     sendMessage(SS_NM_fd, firstMessageToNM);
     // printf("Sent initialization message to naming server!\n");
 
-    readMessage(SS_NM_fd); // Read confirmation message from server
-
+    char *response = readMessage(SS_NM_fd); // Read confirmation message from server
     printf("> Sent all paths to naming server and now closing the socket!\n");
+    printf("NM > %s\n", response);
+
+    mkdir("bkps", 0777); // create a bkp directory on initialization if not present
+
     close(SS_NM_fd);
     // FD_CLR(SS_NM_fd, &master); // Remove the socket from the master set
 }

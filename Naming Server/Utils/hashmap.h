@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <unistd.h>
 
+#include "utils.h"
+
 // Define the structure of the value
 typedef struct
 {
@@ -14,6 +16,8 @@ typedef struct
     int client_port;
     int num_readers;
     int isWriting;
+    sem_t write_semaphore;
+    sem_t read_semaphore;
 } ValueStruct;
 
 typedef struct HashmapItem

@@ -16,7 +16,12 @@ int main()
 
     // Hashmap creation
     // This hashmap stores the accessible_paths of the SS's as the key and the related SS info in a struct as a value to the key
-    init_hashmap(accessible_paths_hashmap);
+    // init_hashmap(accessible_paths_hashmap);
+    cache = (LRUCache *)malloc(sizeof(LRUCache));
+    if (cache == NULL) {
+        perror("Failed to allocate memory for LRUCache");
+    }
+    cacheInit(cache);
 
     // Socket creation and binding
     NM_SS_fd = createServerSocket();

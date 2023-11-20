@@ -25,6 +25,7 @@ int parse_ssinit(char *init_message, char *ip_address)
   * Port number of the Storage Server for communication with the Naming Server
   * Port number of the Storage Server for communication with the client\
   */
+
   char *token;
   int ss_nm_port, ss_client_port;
 
@@ -47,9 +48,11 @@ int parse_ssinit(char *init_message, char *ip_address)
   {
     char ipAddrCharArray[100];
     strcpy(ipAddrCharArray, ip_address);
-    ValueStruct vs = {ipAddrCharArray, ss_nm_port, ss_client_port, 0, 0};
-    insert(accessible_paths_hashmap, token, vs); // insert the path and the value struct in the hashmap for the
-                                                 // new SS
+    sem_t write_semaphore, read_semaphore;
+    sem_init(&write_semaphore, 0, 1);
+    sem_init(&read_semaphore, 0, 1);
+    ValueStruct vs = {ipAddrCharArray, ss_nm_port, ss_client_port, 0, 0, write_semaphore, read_semaphore};
+    putInCache(cache, token, vs); // insert the path and the value struct in the hashmap for the new SS
 
     // ValueStruct *myStruct = find(accessible_paths_hashmap, token);
     // printf("IP is: %s\n", myStruct->ip);
@@ -72,7 +75,7 @@ int parse_ssinit(char *init_message, char *ip_address)
   return 1;
 }
 
-char *readStorageServerMessage(int sock, char *ip_address)
+char *process_SS_msg(int sock, char *ip_address)
 {
   /*
     Function to read the message sent by the storage server
@@ -102,7 +105,8 @@ char *readStorageServerMessage(int sock, char *ip_address)
   {
     printf(GRN "%s" reset, buffer);
     parse_ssinit(buffer, ip_address);
-    return "NM > ssinit done";
+
+    return "ssinit done";
   }
   else if (strncmp(buffer, "ACK", 3) == 0)
   {
@@ -112,14 +116,18 @@ char *readStorageServerMessage(int sock, char *ip_address)
     printf(GRN "SS > Acknowledgement for '%s' operation\n" reset, ackToken);
     if (strcmp(ackToken, "READ") == 0 || strcmp(ackToken, "GETINFO") == 0)
     {
-      ValueStruct *myStruct = find(accessible_paths_hashmap, ackPath);
+      ValueStruct *myStruct = getFromCache(cache, ackPath);
+      sem_wait(&(myStruct->read_semaphore));
       myStruct->num_readers--;
+      sem_post(&(myStruct->read_semaphore));
       printf(MAG "One reader completed reading. Number of readers for %s is %d\n" reset, ackPath, myStruct->num_readers);
     }
     else if (strcmp(ackToken, "WRITE") == 0)
     {
-      ValueStruct *myStruct = find(accessible_paths_hashmap, ackPath);
+      ValueStruct *myStruct = getFromCache(cache, ackPath);
+      sem_wait(&(myStruct->write_semaphore));
       myStruct->isWriting = 0;
+      sem_post(&(myStruct->write_semaphore));
       printf(MAG "Writer completed writing. isWriting for %s is %d\n" reset, ackPath, myStruct->isWriting);
     }
   }
@@ -147,8 +155,10 @@ void *handleStorageServerConnection(void *arg)
   free(info); // Free the allocated memory for the connection info
 
   // while (1) {
-  char *message = readStorageServerMessage(sock, ip_buffer);
+  char *message = process_SS_msg(sock, ip_buffer);
   sendMessage(sock, message);
+
+  // sendMessage(sock, "\nCREATE bkps/");
   // }
   close(sock);
 

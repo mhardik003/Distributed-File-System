@@ -8,6 +8,7 @@
 #include "utils.h"
 #include "server_setup.h"
 
+
 char *operation_handler(char **inputs, int num_inputs);
 int connect_to_ss(char *SS_ip, int SS_port);
 ValueStruct *check_existence(char *input_check);
@@ -171,7 +172,7 @@ ValueStruct *check_existence(char *input_check)
   printf(GRN "File name is: %s\n" reset, file_name);
 
   ValueStruct *myStruct;
-  if ((myStruct = find(accessible_paths_hashmap, folder_name)) == NULL)
+  if ((myStruct = getFromCache(cache, folder_name)) == NULL)
   {
     printf(RED "Folder not found\n" reset);
     return NULL;
@@ -218,8 +219,11 @@ char *create(char *input)
   if (strcmp(response, "CREATED") == 0) // if creation was a success
   {
     printf(GRN "> SS : File/Folder created successfully\n" reset);
-    ValueStruct vs = {myStruct->ip, myStruct->nm_port, myStruct->nm_port, 0, 0};
-    insert(accessible_paths_hashmap, input, vs); // insert the path and the value struct in the hashmap for the
+    sem_t write_semaphore, read_semaphore;
+    sem_init(&write_semaphore, 0, 1);
+    sem_init(&read_semaphore, 0, 1);
+    ValueStruct vs = {myStruct->ip, myStruct->nm_port, myStruct->nm_port, 0, 0, write_semaphore, read_semaphore};
+    putInCache(cache, input, vs); // insert the path and the value struct in the hashmap for the
                                                  // new SS
     return GRN "> NM : File/Folder created successfully" reset;
   }
@@ -239,7 +243,7 @@ char *delete_file(char *filename)
   printf(GRN "Deleting file %s\n" reset, filename);
 
   ValueStruct *myStruct;
-  if ((myStruct = find(accessible_paths_hashmap, filename)) == NULL)
+  if ((myStruct = getFromCache(cache, filename)) == NULL)
   {
     printf(RED "File not found\n" reset);
     return RED "> NM : File not found" reset;
@@ -265,13 +269,13 @@ char *delete_file(char *filename)
   if (strcmp(response, "DELETED FILE") == 0) // if the file/folde was successfully deleted
   {
     printf(GRN "SS > File deleted successfully\n" reset);
-    remove_key(accessible_paths_hashmap, filename);
+    removeFileFromCache(cache, filename);
     return GRN "> NM : File deleted successfully" reset;
   }
   else if (strcmp(response, "DELETED FOLDER") == 0)
   {
     printf(GRN "SS > Directory deleted successfully\n" reset);
-    remove_folder(accessible_paths_hashmap, filename);
+    removeFolderFromCache(cache, filename);
     return GRN "> NM : Directory deleted successfully" reset;
   }
   else
@@ -293,7 +297,7 @@ char *read_write_getinfo_file(char *filename, char *operation)
   printf(GRN "Reading Writing or Getting Info of file %s\n" reset, filename);
 
   ValueStruct *myStruct;
-  if ((myStruct = find(accessible_paths_hashmap, filename)) == NULL)
+  if ((myStruct = getFromCache(cache, filename)) == NULL)
   {
     printf(RED "File not found\n" reset);
     return RED "> NM : File not found" reset;
@@ -302,7 +306,9 @@ char *read_write_getinfo_file(char *filename, char *operation)
   if (strcmp(operation, "READ") || strcmp(operation, "GETINFO"))
   {
     printf(MAG "Incrementing num readers to %d for file %s\n" reset, myStruct->num_readers + 1, filename);
+    sem_wait(&(myStruct->read_semaphore));
     myStruct->num_readers++; // increase the number of readers for that file
+    sem_post(&(myStruct->read_semaphore));
   }
 
   else if (strcmp(operation, "WRITE"))
@@ -313,7 +319,10 @@ char *read_write_getinfo_file(char *filename, char *operation)
     }
 
     printf(MAG "Setting isWriting to 1 for file %s\n" reset, filename);
+    // lock this using a semaphore
+    sem_wait(&(myStruct->write_semaphore));
     myStruct->isWriting = 1; // make the boolean flag to 1, so that now no one else can write to this file until this client is done
+    sem_post(&(myStruct->write_semaphore));
   }
 
   char *response = (char *)malloc(1000 * sizeof(char));
@@ -343,16 +352,19 @@ char *create_file_in_destination_server(ValueStruct *SS2, char *destination_path
   char *response = readMessage(sock2);
   if (strcmp(response, "CREATED") == 0)
   {
-    printf(GRN "SS > File created successfully in the destination SS\n" reset);
+    printf(GRN "SS > Empty File created successfully in the destination SS\n" reset);
   }
   else
   {
-    printf(RED "Error in creating the file\n" reset);
-    return RED "> NM : Error in creating the file" reset;
+    printf(RED "Error in creating the empty file\n" reset);
+    return RED "> NM : Error in creating the empty file" reset;
   }
 
-  ValueStruct vs = {SS2->ip, SS2->nm_port, SS2->client_port, 0, 0};
-  insert(accessible_paths_hashmap, destination_path, vs); // insert the path and the value struct in the hashmap for the destination SS
+  sem_t write_semaphore, read_semaphore;
+  sem_init(&write_semaphore, 0, 1);
+  sem_init(&read_semaphore, 0, 1);
+  ValueStruct vs = {SS2->ip, SS2->nm_port, SS2->client_port, 0, 0, write_semaphore, read_semaphore};
+  putInCache(cache, destination_path, vs); // insert the path and the value struct in the hashmap for the destination SS
 
   printf(GRN "SS > %s\n" reset, response);
   printf("Closing the socket\n");
@@ -387,8 +399,11 @@ char *create_folder_in_destination_server(ValueStruct *SS2, char *destination_pa
   }
 
   // Append the destination+foldername to the hashmap with the ip and port of the destination SS
-  ValueStruct vs = {SS2->ip, SS2->nm_port, SS2->client_port, 0, 0};
-  insert(accessible_paths_hashmap, destination_path, vs); // insert the path and the value struct in the hashmap for the destination SS
+  sem_t write_semaphore, read_semaphore;
+  sem_init(&write_semaphore, 0, 1);
+  sem_init(&read_semaphore, 0, 1);
+  ValueStruct vs = {SS2->ip, SS2->nm_port, SS2->client_port, 0, 0, write_semaphore, read_semaphore};
+  putInCache(cache, destination_path, vs); // insert the path and the value struct in the hashmap for the destination SS
 
   printf(GRN "SS > %s\n" reset, response);
   // printf("Closing the socket\n");
@@ -547,8 +562,8 @@ char *copy_file(char *source, char *destination)
 
   strcat(destination_path, fileName);
 
-  SS1 = find(accessible_paths_hashmap, source);
-  SS2 = find(accessible_paths_hashmap, destination);
+  SS1 = getFromCache(cache, source);
+  SS2 = getFromCache(cache, destination);
 
   // Create empty file in the destination server
   create_file_in_destination_server(SS2, destination_path);
@@ -570,12 +585,12 @@ char *copy_directory(char *source, char *destination)
   ValueStruct *SS2;
   char *temp = (char *)malloc(1024);
 
-  SS1 = find(accessible_paths_hashmap, source);
-  SS2 = find(accessible_paths_hashmap, destination);
+  SS1 = getFromCache(cache, source);
+  SS2 = getFromCache(cache, destination);
 
   // get the contents of the source folder
-  char **contents = get_contents(accessible_paths_hashmap, source);
-  char **dest_contents = get_dest_contents(accessible_paths_hashmap, source);
+  char **contents = get_contents(cache->hashmap, source);
+  char **dest_contents = get_dest_contents(cache->hashmap, source);
   int num_contents = 0;
 
   // print the contents of the folder
@@ -635,14 +650,14 @@ char *copy(char *filename1, char *filename2)
 
   printf(GRN "Copying file %s to %s\n" reset, filename1, filename2);
   ValueStruct *myStruct;
-  if ((myStruct = find(accessible_paths_hashmap, filename1)) == NULL)
+  if ((myStruct = getFromCache(cache, filename1)) == NULL)
   {
     printf(RED "File not found\n" reset);
     return RED "> NM : File not found" reset;
   }
 
   ValueStruct *myStruct2;
-  if ((myStruct2 = find(accessible_paths_hashmap, filename2)) == NULL)
+  if ((myStruct2 = getFromCache(cache, filename2)) == NULL)
   {
     printf(RED "File not found\n" reset);
     return RED "> NM : File not found" reset;
@@ -667,7 +682,8 @@ char *LS()
     Function to list all the accessible paths
   */
 
-  char *keys = get_all_keys(accessible_paths_hashmap);
+  char *keys = get_all_keys(cache->hashmap);
+  printCache(cache);
   // printf("Keys are: %s\n", keys);
   char *response = (char *)malloc(1000);
   strcpy(response, GRN "> NM : Listing all the accessible paths" reset);
@@ -683,7 +699,7 @@ void backup_init()
   // copy the path (either file or folder) from that SS and save it to the first two servers in the SS list
   // for each content, insert it into the backup hashmap
 
-  Node *temp = head_list;
+  ListNode *temp = head_list;
 
   // iterate through all the IPs in the linked list
   while (temp != NULL)
@@ -698,7 +714,7 @@ void backup_init()
     SS->ip = ip;
     SS->nm_port = port;
 
-    char **paths = find_by_ip(accessible_paths_hashmap, ip, port);
+    char **paths = find_by_ip(cache->hashmap, ip, port);
 
     int num_paths = 0;
 
@@ -711,12 +727,12 @@ void backup_init()
     }
 
     // find the two servers to backup the content into
-    ValueStruct *bkp_SS1 = (ValueStruct *)malloc(sizeof(ValueStruct));
-    ValueStruct *bkp_SS2 = (ValueStruct *)malloc(sizeof(ValueStruct));
+    ValueStruct *bkp_1_SS = (ValueStruct *)malloc(sizeof(ValueStruct));
+    ValueStruct *bkp_2_SS = (ValueStruct *)malloc(sizeof(ValueStruct));
 
     int num_backups = 0;
 
-    Node *temp1 = head_list;
+    ListNode *temp1 = head_list;
 
     while (temp1 != NULL)
     {
@@ -726,16 +742,16 @@ void backup_init()
         if (num_backups == 1)
         {
           printf("Found backup server %d ! (%s:%d)\n", num_backups, temp1->ip, temp1->nm_port);
-          bkp_SS1->ip = temp1->ip;
-          bkp_SS1->nm_port = temp1->nm_port;
-          bkp_SS1->client_port = temp1->client_port;
+          bkp_1_SS->ip = temp1->ip;
+          bkp_1_SS->nm_port = temp1->nm_port;
+          bkp_1_SS->client_port = temp1->client_port;
         }
         else if (num_backups == 2)
         {
           printf("Found backup server %d ! (%s:%d)\n", num_backups, temp1->ip, temp1->nm_port);
-          bkp_SS2->ip = temp1->ip;
-          bkp_SS2->nm_port = temp1->nm_port;
-          bkp_SS2->client_port = temp1->client_port;
+          bkp_2_SS->ip = temp1->ip;
+          bkp_2_SS->nm_port = temp1->nm_port;
+          bkp_2_SS->client_port = temp1->client_port;
         }
       }
       if (num_backups >= 2)
@@ -746,9 +762,9 @@ void backup_init()
       temp1 = temp1->next;
     }
 
-    printf("Saving the backup for %s:%d in : %s:%d and %s:%d \n", ip, port, bkp_SS1->ip, bkp_SS1->nm_port, bkp_SS2->ip, bkp_SS2->nm_port);
+    printf("Saving the backup for %s:%d in : %s:%d and %s:%d \n", ip, port, bkp_1_SS->ip, bkp_1_SS->nm_port, bkp_2_SS->ip, bkp_2_SS->nm_port);
 
-    // iterate through all the paths, copy them and save them to the first two servers in the SS list (bkp_SS1 and bkp_SS2) and insert them into the backup hashmap
+    // iterate through all the paths, copy them and save them to the first two servers in the SS list (bkp_1_SS and bkp_2_SS) and insert them into the backup hashmap
     for (int i = 0; i < num_paths; i++)
     {
       char *path = paths[i];
@@ -756,44 +772,46 @@ void backup_init()
       {
         continue;
       }
-      char *SS1_path = (char *)malloc(1000 * sizeof(char));
-      char *SS2_path = (char *)malloc(1000 * sizeof(char));
+      char *SS_path = (char *)malloc(1000 * sizeof(char));
 
-      strcpy(SS1_path, "bkps/bkp_");
-      strcat(SS1_path, path);
-
-      strcpy(SS2_path, "bkps/bkp_");
-      strcat(SS2_path, path);
+      strcpy(SS_path, "bkps/bkp_");
+      strcat(SS_path, path);
 
       printf("Copying path %s\n", path);
 
       // copy the file/folder to the first two servers in the SS list
       if (path[strlen(path) - 1] == '/')
       {
-        create_folder_in_destination_server(bkp_SS1, SS1_path);
-        create_folder_in_destination_server(bkp_SS2, SS2_path);
+        create_folder_in_destination_server(bkp_1_SS, SS_path);
+        create_folder_in_destination_server(bkp_2_SS, SS_path);
       }
       else
       {
-        create_file_in_destination_server(bkp_SS1, SS1_path);
-        create_file_in_destination_server(bkp_SS2, SS2_path);
-        printf("> Done creating the file in the backup servers! \n");
+        create_file_in_destination_server(bkp_1_SS, SS_path);
+        // sleep(1);
+        create_file_in_destination_server(bkp_2_SS, SS_path);
+        printf("> Done creating the empty file in the backup servers! \n");
+        // sleep(1);
         read_and_save_contents_from_source_server(SS, path);
         printf("> Done retreiving the file and saving it locally! \n");
-        write_contents_to_destination_server(bkp_SS1, SS1_path, path);
-        printf("> Backupped the file in backup server 1 ! \n");
-        read_and_save_contents_from_source_server(SS, path);
+        // sleep(1);
+        write_contents_to_destination_server(bkp_1_SS, SS_path, path);
+        printf("> Backedup the file in backup server 1 ! \n");
+        // sleep(1);
+        read_and_save_contents_from_source_server(SS, path); // copying to nm again, since the temp file gets deleted
         printf("> Done retreiving the file and saving it locally! \n");
-        write_contents_to_destination_server(bkp_SS2, SS2_path, path);
-        printf("> Backupped the file in backup server 2 ! \n");
+        // sleep(1);
+        write_contents_to_destination_server(bkp_2_SS, SS_path, path);
+        printf("> Backedup the file in backup server 2 ! \n");
+        // sleep(1);
       }
 
       // insert the path and the value struct in the hashmap for the new SS
-      ValueStruct vs = {bkp_SS1->ip, bkp_SS1->nm_port, bkp_SS1->client_port, 0, 0};
-      insert(bkp_accessible_paths_hashmap, SS1_path, vs);
+      ValueStruct vs = {bkp_1_SS->ip, bkp_1_SS->nm_port, bkp_1_SS->client_port, 0, 0};
+      insert(bkp_accessible_paths_hashmap, SS_path, vs);
 
-      ValueStruct vs2 = {bkp_SS2->ip, bkp_SS2->nm_port, bkp_SS2->client_port, 0, 0};
-      insert(bkp_accessible_paths_hashmap, SS2_path, vs2);
+      ValueStruct vs2 = {bkp_2_SS->ip, bkp_2_SS->nm_port, bkp_2_SS->client_port, 0, 0};
+      insert(bkp_accessible_paths_hashmap, SS_path, vs2);
       // print the contents of the backup hashmap
       printf("Printing the contents of the backup hashmap\n");
       print_hashmap(bkp_accessible_paths_hashmap);
