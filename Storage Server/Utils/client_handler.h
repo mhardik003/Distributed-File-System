@@ -86,6 +86,7 @@ void *listenForClients(void *NM_client_fd)
             strcpy(info->ip_address, ip_buffer);
             pthread_t client_thread;
             pthread_create(&client_thread, NULL, handleClientConnection, (void *)info);
+            pthread_join(client_thread, NULL);
         }
     }
 }
@@ -116,6 +117,7 @@ void *listenFromNameServer(void *NM_SS_fd)
             strcpy(info->ip_address, ip_buffer);
             pthread_t nm_thread;
             pthread_create(&nm_thread, NULL, handleNMConnection, (void *)info);
+            pthread_join(nm_thread, NULL);
         }
     }
 }

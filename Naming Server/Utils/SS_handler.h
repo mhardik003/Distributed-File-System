@@ -2,6 +2,9 @@
 #define SS_HANDLER_H
 
 #include <string.h>
+// #include "operation_handler.h"
+#include "utils.h"
+int num_storage_servers = 0;
 
 int parse_ssinit(char *init_message, char *ip_address)
 {
@@ -39,14 +42,14 @@ int parse_ssinit(char *init_message, char *ip_address)
   }
 
   token = strtok(NULL, "\n");
+
   while (token != NULL)
   {
     char ipAddrCharArray[100];
     strcpy(ipAddrCharArray, ip_address);
     ValueStruct vs = {ipAddrCharArray, ss_nm_port, ss_client_port, 0, 0};
-    insert(accessible_paths_hashmap, token,
-           vs); // insert the path and the value struct in the hashmap for the
-                // new SS
+    insert(accessible_paths_hashmap, token, vs); // insert the path and the value struct in the hashmap for the
+                                                 // new SS
 
     // ValueStruct *myStruct = find(accessible_paths_hashmap, token);
     // printf("IP is: %s\n", myStruct->ip);
@@ -56,6 +59,15 @@ int parse_ssinit(char *init_message, char *ip_address)
     // printf("Is writing is: %d\n", myStruct->isWriting);
     token = strtok(NULL, "\n");
   }
+
+  // Insert the SS info in the SS list
+  insertNode(&head_list, ip_address, ss_nm_port, ss_client_port);
+  printf("List of all connected servers : \n");
+  displayList(head_list);
+
+  // Increment the number of servers
+  num_storage_servers++;
+  printf(CYN "NM > Number of storage servers connected: %d\n" reset, num_storage_servers);
 
   return 1;
 }
@@ -75,11 +87,17 @@ char *readStorageServerMessage(int sock, char *ip_address)
 
   // printf("Now reading the message\n");
   char buffer[BUFFER_RECV_SIZE] = {0};
-  if (recv(sock, buffer, BUFFER_RECV_SIZE, 0) < 0)
+  int bytes_read = recv(sock, buffer, BUFFER_RECV_SIZE, 0);
+  if (bytes_read < 0)
   {
     return RED "NM > Error in receiving the message" reset;
   }
-  printf("SS > %s\n", buffer);
+  else if (bytes_read == 0)
+  {
+    printf(RED "NM > Storage server %s has closed the connection\n" reset, ip_address);
+    num_storage_servers--;
+    return NULL;
+  }
   if (strncmp(buffer, "ssinit", 6) == 0)
   {
     printf(GRN "%s" reset, buffer);
@@ -105,6 +123,7 @@ char *readStorageServerMessage(int sock, char *ip_address)
       printf(MAG "Writer completed writing. isWriting for %s is %d\n" reset, ackPath, myStruct->isWriting);
     }
   }
+  printf("SS > %s\n", buffer);
   return "Hey SS, how are you? -NM";
 }
 
@@ -131,8 +150,14 @@ void *handleStorageServerConnection(void *arg)
   char *message = readStorageServerMessage(sock, ip_buffer);
   sendMessage(sock, message);
   // }
-
   close(sock);
+
+  // TODO
+  if (num_storage_servers == 3)
+  {
+    printf("Starting to create the backups now. \n");
+    backup_init(); // initialize and complete the backups of the 3 servers
+  }
   return NULL;
 }
 
@@ -156,18 +181,17 @@ void *listenForStorageServers(void *arg)
 
     int *new_sock = (int *)malloc(sizeof(int));
     *new_sock = acceptConnection(server_fd, &address, ip_buffer);
-    printf(CYN "NM > Connected to storage server %s\n" reset, ip_buffer);
+    printf(CYN "NM > Connected to storage server with IP %s\n" reset, ip_buffer);
 
-    if (*new_sock >= 0)
+    if (*new_sock >= 0) // if the connection is successful
     {
       pthread_t thread_id;
       connection_info *info =
           (connection_info *)malloc(sizeof(connection_info));
       info->socket_desc = *new_sock;
-      strncpy(info->ip_address, ip_buffer, INET_ADDRSTRLEN);
 
-      pthread_create(&thread_id, NULL, handleStorageServerConnection,
-                     (void *)info);
+      strncpy(info->ip_address, ip_buffer, INET_ADDRSTRLEN);
+      pthread_create(&thread_id, NULL, handleStorageServerConnection, (void *)info);
     }
   }
   return NULL;

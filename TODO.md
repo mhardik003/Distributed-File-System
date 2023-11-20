@@ -3,3 +3,5 @@
 - Test for large files
 - Update num readers and write bool : DONE
 - Not able to copy directory between two different IPs
+- Create locks for writing (although it is handled by 'isWriting')
+- On reading/writing, the thread isn't closing there the SS isn't able to take more requests from the NM

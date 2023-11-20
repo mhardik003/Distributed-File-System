@@ -50,42 +50,47 @@ void operational_handler(char **input_tokens, int num_tokens, int sock)
     if (strcmp(input_tokens[0], "READ") == 0)
     {
         readFile(sock, input_tokens);
+        return;
     }
     if (strcmp(input_tokens[0], "NMREAD") == 0)
     {
         NMreadFile(sock, input_tokens);
+        return;
     }
     else if (strcmp(input_tokens[0], "WRITE") == 0)
     {
         writeFile(sock, input_tokens, num_tokens);
+        return;
     }
     else if (strcmp(input_tokens[0], "NMWRITE") == 0)
     {
         NMwriteFile(sock, input_tokens, num_tokens);
+        return;
     }
     else if (strcmp(input_tokens[0], "GETINFO") == 0)
     {
         getInfo(sock, input_tokens);
+        return;
     }
     else if (strcmp(input_tokens[0], "CREATE") == 0)
     {
         createFile(sock, input_tokens);
+        return;
     }
     else if (strcmp(input_tokens[0], "CREATEFOLDER") == 0)
     {
         createFolder(sock, input_tokens);
+        return;
     }
     else if (strcmp(input_tokens[0], "DELETE") == 0)
     {
         deleteFunction(sock, input_tokens);
-    }
-    else if (strcmp(input_tokens[0], "COPY") == 0)
-    {
-        copyFile(sock, input_tokens);
+        return;
     }
     else
     {
         printf("Invalid command\n");
+        return;
     }
 }
 
@@ -194,7 +199,7 @@ void deleteFolder(char *path)
     /*
         Function to delete a folder and its contents recursively
     */
-   
+
     DIR *d = opendir(path);
     if (d)
     {
@@ -269,7 +274,7 @@ void NMreadFile(int sock, char **NM_input_tokens)
     }
 
     // Allocate memory for the buffer
-    size_t bufferSize = 512;
+    size_t bufferSize = 1024;
     buffer = (char *)malloc(bufferSize);
 
     if (!buffer)
@@ -286,12 +291,11 @@ void NMreadFile(int sock, char **NM_input_tokens)
 
     // Read file contents into buffer
     sendMessage(sock, buffer); // Send the chunk
-    fclose(file);              // Close the file
 
-    sendMessage(sock, "END"); // Send the end of file message
+    fclose(file); // Close the file
     close(sock);
     // Print the contents
-    printf(GRN "SS > Sent the contents to the NM! \n" reset);
+    printf(GRN "SS > Sent the following contents to the NM! : %s \n" reset, buffer);
 }
 
 void readFile(int sock, char **client_input_tokens)
@@ -357,34 +361,37 @@ void NMwriteFile(int sock, char **client_input_tokens, int num_tokens)
     */
 
     FILE *file;
-    char *content = (char *)malloc(1000 * sizeof(char));
-    content[0] = '\0';
+    char *content = (char *)malloc(1024 * sizeof(char));
+    memset(content, 0, 1024);
 
     for (int i = 2; i < num_tokens; i++)
     {
         strcat(content, " ");
         strcat(content, client_input_tokens[i]);
     }
+
     printf("Writing to the file $%s$\n", client_input_tokens[1]);
     // Open the file in append mode
-    file = fopen(client_input_tokens[1], "a");
+    file = fopen(client_input_tokens[1], "wb");
+
     if (file == NULL)
     {
         perror("Error opening file");
+        close(sock);
+        free(content);
         return;
     }
-
     // Append the text to the file
     fputs(content, file);
 
     // Close the file
-    fclose(file);
-
-    printf("Text written successfully.\n");
     sendMessage(sock, "WRITTEN");
-    close(sock);
 
+    fclose(file);
+    close(sock);
     free(content);
+
+    printf(GRN "Text written successfully.\n" reset);
 }
 
 void writeFile(int sock, char **client_input_tokens, int num_tokens)

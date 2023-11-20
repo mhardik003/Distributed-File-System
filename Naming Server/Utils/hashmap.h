@@ -222,6 +222,91 @@ void sort_contents(char **contents, int num_contents)
     }
 }
 
+void remove_by_ip(HashmapItem *hashmap[], const char *ip)
+{
+    /*
+        Used when we find out that a server is dead,
+        then we remove all the entries related to it
+    */
+    for (int i = 0; i < HASH_MAP_SIZE; ++i)
+    {
+        HashmapItem *current = hashmap[i];
+        HashmapItem *prev = NULL;
+
+        while (current != NULL)
+        {
+            // Store the next item before potentially freeing current
+            HashmapItem *next = current->next;
+
+            if (strcmp(current->value.ip, ip) == 0)
+            {
+                if (prev == NULL)
+                {
+                    // Remove the first item in the linked list
+                    hashmap[i] = next;
+                }
+                else
+                {
+                    // Bypass the current item in the linked list
+                    prev->next = next;
+                }
+
+                // Free the current item
+                free(current->key);
+                free(current);
+            }
+            else
+            {
+                // Move prev only if we didn't remove the current item
+                prev = current;
+            }
+
+            // Move to the next item
+            current = next;
+        }
+    }
+}
+
+char **find_by_ip(HashmapItem *hashmap[], const char *ip, int port)
+{
+    /*
+        Finds all the key-value pairs having the given ip
+        and returns them as a array of strings
+    */
+
+    char **keys = (char **)malloc(MAX_HASHMAP_SIZE * sizeof(char *));
+    int num_keys = 0;
+
+    for (int i = 0; i < HASH_MAP_SIZE; ++i)
+    {
+        HashmapItem *item = hashmap[i];
+        while (item != NULL)
+        {
+            if (strcmp(item->value.ip, ip) == 0 && item->value.nm_port == port)
+            {
+                keys[num_keys] = (char *)malloc(MAX_HASHMAP_SIZE * sizeof(char));
+                strcpy(keys[num_keys], item->key);
+                num_keys++;
+            }
+            item = item->next;
+        }
+    }
+    return keys;
+}
+
+void print_hashmap(HashmapItem *hashmap[])
+{
+    for (int i = 0; i < HASH_MAP_SIZE; ++i)
+    {
+        HashmapItem *item = hashmap[i];
+        while (item != NULL)
+        {
+            printf("%s : %s %d %d\n", item->key, item->value.ip, item->value.nm_port, item->value.client_port);
+            item = item->next;
+        }
+    }
+}
+
 #endif // HASHMAP_H
 
 /*

@@ -23,6 +23,10 @@ char *copy_directory(char *source, char *destination);
 char *copy(char *filename1, char *filename2);
 char *LS();
 
+void create_backup(char *filename);
+void update_backup(char *filename);
+void backup_init();
+
 char *operation_handler(char **inputs, int num_inputs)
 {
   /*
@@ -215,9 +219,8 @@ char *create(char *input)
   {
     printf(GRN "> SS : File/Folder created successfully\n" reset);
     ValueStruct vs = {myStruct->ip, myStruct->nm_port, myStruct->nm_port, 0, 0};
-    insert(accessible_paths_hashmap, input,
-           vs); // insert the path and the value struct in the hashmap for the
-                // new SS
+    insert(accessible_paths_hashmap, input, vs); // insert the path and the value struct in the hashmap for the
+                                                 // new SS
     return GRN "> NM : File/Folder created successfully" reset;
   }
   else
@@ -313,7 +316,7 @@ char *read_write_getinfo_file(char *filename, char *operation)
     myStruct->isWriting = 1; // make the boolean flag to 1, so that now no one else can write to this file until this client is done
   }
 
-  char* response = (char *)malloc(1000 * sizeof(char));
+  char *response = (char *)malloc(1000 * sizeof(char));
   strcpy(response, "lookup response\nip:");
   strcat(response, myStruct->ip);
   strcat(response, "\nclient_port:");
@@ -403,12 +406,18 @@ char *read_and_save_contents_from_source_server(ValueStruct *SS1, char *source)
   char *filename = (char *)malloc(1024 * sizeof(char));
   char *message_to_SS = (char *)malloc(1024);
   char *tempSourcePath = (char *)malloc(1024 * sizeof(char));
-  int sock1 = connect_to_ss(SS1->ip, SS1->nm_port);
 
   strcpy(tempSourcePath, source);
 
-  filename = strrchr(tempSourcePath, '/');
-  filename++;
+  if (strrchr(tempSourcePath, '/') != NULL)
+  {
+    filename = strrchr(tempSourcePath, '/');
+    filename++;
+  }
+  else
+  {
+    strcpy(filename, source);
+  }
 
   strcat(filename, "_temp");
   FILE *fp = fopen(filename, "w"); // create the temporary file where the contents of the file to be copied will be stored
@@ -425,28 +434,21 @@ char *read_and_save_contents_from_source_server(ValueStruct *SS1, char *source)
   // printf("The source path is  : %s", source);
   strcat(message_to_SS, source);
   printf("SS < %s\n", message_to_SS);
+
+  printf("Getting contents of %s from %s:%d\n", source, SS1->ip, SS1->nm_port);
+  int sock1 = connect_to_ss(SS1->ip, SS1->nm_port);
   sendMessage(sock1, message_to_SS);
+  char *SS_response = readMessage(sock1);
+  close(sock1);
 
   // read the file from SS1 in chunks and store it in a temporary_file
-  printf(GRN "SS > ");
-  while (1)
-  {
-    char *SS_response = readMessage(sock1);
-    // puts(SS_response);
-    int resp_len = strlen(SS_response);
-
-    if (strncmp(SS_response + resp_len - 3, "END", 3) == 0)
-    {
-      SS_response[resp_len - 3] = '\0';
-      fputs(SS_response, fp);
-      break;
-    }
-    // append the contents to the temporary file
-    fputs(SS_response, fp);
-  }
-  printf("\n");
-  close(sock1);
+  printf(GRN "SS > %s", SS_response);
+  fputs(SS_response, fp);
   fclose(fp);
+
+  
+
+  // puts(SS_response);
 
   return "NM > Created file in destination server";
 }
@@ -461,7 +463,6 @@ char *write_contents_to_destination_server(ValueStruct *SS2, char *destination_p
   char *filename = (char *)malloc(1024 * sizeof(char));
   char *message_to_ss = (char *)malloc(1024 * sizeof(char));
   char *tempSourcePath = (char *)malloc(1024);
-  char *file_contents = (char *)malloc(10000 * sizeof(char));
 
   // Create the message to be sent to the SS
   strcpy(message_to_ss, "NMWRITE ");
@@ -470,8 +471,16 @@ char *write_contents_to_destination_server(ValueStruct *SS2, char *destination_p
 
   strcpy(tempSourcePath, source);
 
-  filename = strrchr(tempSourcePath, '/');
-  filename++;
+  if (strrchr(tempSourcePath, '/') != NULL)
+  {
+    filename = strrchr(tempSourcePath, '/');
+    filename++;
+  }
+  else
+  {
+    strcpy(filename, source);
+  }
+
   strcat(filename, "_temp");
 
   // open the temporary file
@@ -481,6 +490,8 @@ char *write_contents_to_destination_server(ValueStruct *SS2, char *destination_p
     printf(RED "Error in opening the temporary file\n" reset);
     return RED "> NM : Error in opening the temporary file" reset;
   }
+
+  printf("Opened the temporary file %s for reading\n", filename);
 
   // read and store the filecontents in a string
   char *line = (char *)malloc(1024);
@@ -495,6 +506,8 @@ char *write_contents_to_destination_server(ValueStruct *SS2, char *destination_p
     strcat(message_to_ss, line); // Append the line to the buffer
   }
   fclose(fp);
+
+  printf("The message to be sent to the SS is : %s\n", message_to_ss);
 
   int sock1 = connect_to_ss(SS2->ip, SS2->nm_port);
   sendMessage(sock1, message_to_ss); // send the message to the SS to write the contents to the destination file path
@@ -661,6 +674,134 @@ char *LS()
   strcat(response, "\n");
   strcat(response, keys);
   return response;
+}
+
+void backup_init()
+{
+  // iterate through all the contents in the SS list
+  // for each IP of the SS, find the accessible path one by one from the hashmap
+  // copy the path (either file or folder) from that SS and save it to the first two servers in the SS list
+  // for each content, insert it into the backup hashmap
+
+  Node *temp = head_list;
+
+  // iterate through all the IPs in the linked list
+  while (temp != NULL)
+  {
+    printf("Finding all the accessible paths for SS (%s:%d) \n", temp->ip, temp->nm_port);
+
+    char *ip = temp->ip;
+    int port = temp->nm_port;
+
+    // create a value struct for the new SS
+    ValueStruct *SS = (ValueStruct *)malloc(sizeof(ValueStruct));
+    SS->ip = ip;
+    SS->nm_port = port;
+
+    char **paths = find_by_ip(accessible_paths_hashmap, ip, port);
+
+    int num_paths = 0;
+
+    // print the paths &
+    // find the number of paths
+    for (int i = 0; paths[i] != NULL; i++)
+    {
+      printf("%s\n", paths[i]);
+      num_paths++;
+    }
+
+    // find the two servers to backup the content into
+    ValueStruct *bkp_SS1 = (ValueStruct *)malloc(sizeof(ValueStruct));
+    ValueStruct *bkp_SS2 = (ValueStruct *)malloc(sizeof(ValueStruct));
+
+    int num_backups = 0;
+
+    Node *temp1 = head_list;
+
+    while (temp1 != NULL)
+    {
+      if ((temp1->nm_port != port) || strcmp(temp1->ip, ip) != 0)
+      {
+        num_backups++;
+        if (num_backups == 1)
+        {
+          printf("Found backup server %d ! (%s:%d)\n", num_backups, temp1->ip, temp1->nm_port);
+          bkp_SS1->ip = temp1->ip;
+          bkp_SS1->nm_port = temp1->nm_port;
+          bkp_SS1->client_port = temp1->client_port;
+        }
+        else if (num_backups == 2)
+        {
+          printf("Found backup server %d ! (%s:%d)\n", num_backups, temp1->ip, temp1->nm_port);
+          bkp_SS2->ip = temp1->ip;
+          bkp_SS2->nm_port = temp1->nm_port;
+          bkp_SS2->client_port = temp1->client_port;
+        }
+      }
+      if (num_backups >= 2)
+      {
+        break;
+      }
+
+      temp1 = temp1->next;
+    }
+
+    printf("Saving the backup for %s:%d in : %s:%d and %s:%d \n", ip, port, bkp_SS1->ip, bkp_SS1->nm_port, bkp_SS2->ip, bkp_SS2->nm_port);
+
+    // iterate through all the paths, copy them and save them to the first two servers in the SS list (bkp_SS1 and bkp_SS2) and insert them into the backup hashmap
+    for (int i = 0; i < num_paths; i++)
+    {
+      char *path = paths[i];
+      if (strncmp(path, "bkps", 4) == 0)
+      {
+        continue;
+      }
+      char *SS1_path = (char *)malloc(1000 * sizeof(char));
+      char *SS2_path = (char *)malloc(1000 * sizeof(char));
+
+      strcpy(SS1_path, "bkps/bkp_");
+      strcat(SS1_path, path);
+
+      strcpy(SS2_path, "bkps/bkp_");
+      strcat(SS2_path, path);
+
+      printf("Copying path %s\n", path);
+
+      // copy the file/folder to the first two servers in the SS list
+      if (path[strlen(path) - 1] == '/')
+      {
+        create_folder_in_destination_server(bkp_SS1, SS1_path);
+        create_folder_in_destination_server(bkp_SS2, SS2_path);
+      }
+      else
+      {
+        create_file_in_destination_server(bkp_SS1, SS1_path);
+        create_file_in_destination_server(bkp_SS2, SS2_path);
+        printf("> Done creating the file in the backup servers! \n");
+        read_and_save_contents_from_source_server(SS, path);
+        printf("> Done retreiving the file and saving it locally! \n");
+        write_contents_to_destination_server(bkp_SS1, SS1_path, path);
+        printf("> Backupped the file in backup server 1 ! \n");
+        read_and_save_contents_from_source_server(SS, path);
+        printf("> Done retreiving the file and saving it locally! \n");
+        write_contents_to_destination_server(bkp_SS2, SS2_path, path);
+        printf("> Backupped the file in backup server 2 ! \n");
+      }
+
+      // insert the path and the value struct in the hashmap for the new SS
+      ValueStruct vs = {bkp_SS1->ip, bkp_SS1->nm_port, bkp_SS1->client_port, 0, 0};
+      insert(bkp_accessible_paths_hashmap, SS1_path, vs);
+
+      ValueStruct vs2 = {bkp_SS2->ip, bkp_SS2->nm_port, bkp_SS2->client_port, 0, 0};
+      insert(bkp_accessible_paths_hashmap, SS2_path, vs2);
+      // print the contents of the backup hashmap
+      printf("Printing the contents of the backup hashmap\n");
+      print_hashmap(bkp_accessible_paths_hashmap);
+    }
+
+    temp = temp->next;
+  }
+  printf("Done creating the backups\n");
 }
 
 #endif // OPERATION_HANDLER_H
