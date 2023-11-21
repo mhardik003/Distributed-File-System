@@ -8,7 +8,6 @@
 #include "utils.h"
 #include "server_setup.h"
 
-
 char *operation_handler(char **inputs, int num_inputs);
 int connect_to_ss(char *SS_ip, int SS_port);
 ValueStruct *check_existence(char *input_check);
@@ -224,7 +223,7 @@ char *create(char *input)
     sem_init(&read_semaphore, 0, 1);
     ValueStruct vs = {myStruct->ip, myStruct->nm_port, myStruct->nm_port, 0, 0, write_semaphore, read_semaphore};
     putInCache(cache, input, vs); // insert the path and the value struct in the hashmap for the
-                                                 // new SS
+                                  // new SS
     return GRN "> NM : File/Folder created successfully" reset;
   }
   else
@@ -341,6 +340,7 @@ char *create_file_in_destination_server(ValueStruct *SS2, char *destination_path
   // connect to SS2 to create the file there
 
   char *message_to_SS = (char *)malloc(1024 * sizeof(char));
+  printf("Creating a file in %s:%d\n", SS2->ip, SS2->nm_port);
   int sock2 = connect_to_ss(SS2->ip, SS2->nm_port);
   // create the file in destination server
   strcpy(message_to_SS, "CREATE ");
@@ -350,6 +350,8 @@ char *create_file_in_destination_server(ValueStruct *SS2, char *destination_path
   sendMessage(sock2, message_to_SS);
 
   char *response = readMessage(sock2);
+  close(sock2);
+
   if (strcmp(response, "CREATED") == 0)
   {
     printf(GRN "SS > Empty File created successfully in the destination SS\n" reset);
@@ -368,7 +370,6 @@ char *create_file_in_destination_server(ValueStruct *SS2, char *destination_path
 
   printf(GRN "SS > %s\n" reset, response);
   printf("Closing the socket\n");
-  close(sock2);
 }
 
 char *create_folder_in_destination_server(ValueStruct *SS2, char *destination_path)
@@ -387,6 +388,7 @@ char *create_folder_in_destination_server(ValueStruct *SS2, char *destination_pa
   sendMessage(sock2, message_to_SS);
 
   char *response = readMessage(sock2);
+  close(sock2);
 
   if (strcmp(response, "CREATED") == 0)
   {
@@ -407,7 +409,6 @@ char *create_folder_in_destination_server(ValueStruct *SS2, char *destination_pa
 
   printf(GRN "SS > %s\n" reset, response);
   // printf("Closing the socket\n");
-  close(sock2);
 }
 
 char *read_and_save_contents_from_source_server(ValueStruct *SS1, char *source)
@@ -460,8 +461,6 @@ char *read_and_save_contents_from_source_server(ValueStruct *SS1, char *source)
   printf(GRN "SS > %s", SS_response);
   fputs(SS_response, fp);
   fclose(fp);
-
-  
 
   // puts(SS_response);
 
@@ -527,6 +526,7 @@ char *write_contents_to_destination_server(ValueStruct *SS2, char *destination_p
   int sock1 = connect_to_ss(SS2->ip, SS2->nm_port);
   sendMessage(sock1, message_to_ss); // send the message to the SS to write the contents to the destination file path
   char *response = readMessage(sock1);
+  close(sock1);
 
   // delete the temporary file
   remove(filename);
@@ -537,7 +537,6 @@ char *write_contents_to_destination_server(ValueStruct *SS2, char *destination_p
     return GRN "> NM : File copied successfully" reset;
   }
 
-  close(sock1);
   return RED "Error in copying" reset;
 }
 
@@ -567,12 +566,17 @@ char *copy_file(char *source, char *destination)
 
   // Create empty file in the destination server
   create_file_in_destination_server(SS2, destination_path);
+  printf("> NM : Created empty file in the destination server\n");
 
   // connect to SS1 to read the contents of the file to be copied
   read_and_save_contents_from_source_server(SS1, source);
+  printf("> NM : Read the contents of the file to be copied and stored them temporarily\n");
 
   // connect to SS2 to write the contents from the temporary file to the destination file path
   write_contents_to_destination_server(SS2, destination_path, source);
+  printf("> NM : Wrote the contents of the temporary file to the destination file path\n  ");
+
+  return GRN "NM > Done copying file\n" reset;
 }
 
 char *copy_directory(char *source, char *destination)
@@ -663,9 +667,16 @@ char *copy(char *filename1, char *filename2)
     return RED "> NM : File not found" reset;
   }
 
-  // check if the filenam1 ends in a '/'
+  if (filename2[strlen(filename2) - 1] == '/')
+  {
+    printf(RED "Cannot copy to a file\n" reset);
+    return RED "> NM : Cannot copy to a file" reset;
+  }
+
+  // check if the filename ends in a '/'
   if (filename1[strlen(filename1) - 1] != '/')
   {
+
     return copy_file(filename1, filename2);
   }
   else
@@ -683,7 +694,7 @@ char *LS()
   */
 
   char *keys = get_all_keys(cache->hashmap);
-  printCache(cache);
+  // printCache(cache);
   // printf("Keys are: %s\n", keys);
   char *response = (char *)malloc(1000);
   strcpy(response, GRN "> NM : Listing all the accessible paths" reset);

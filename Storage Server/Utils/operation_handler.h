@@ -370,7 +370,7 @@ void NMwriteFile(int sock, char **client_input_tokens, int num_tokens)
         strcat(content, client_input_tokens[i]);
     }
 
-    printf("Writing to the file $%s$\n", client_input_tokens[1]);
+    printf("Writing to the file '%s'\n", client_input_tokens[1]);
     // Open the file in append mode
     file = fopen(client_input_tokens[1], "wb");
 
@@ -409,7 +409,7 @@ void writeFile(int sock, char **client_input_tokens, int num_tokens)
         strcat(content, " ");
         strcat(content, client_input_tokens[i]);
     }
-    printf("Writing to the file $%s$\n", client_input_tokens[1]);
+    printf("Writing to the file '%s'\n", client_input_tokens[1]);
     // Open the file in append mode
     file = fopen(client_input_tokens[1], "a");
     if (file == NULL)
