@@ -785,7 +785,7 @@ void backup_init()
       }
       char *SS_path = (char *)malloc(1000 * sizeof(char));
 
-      strcpy(SS_path, "bkps/bkp_");
+      strcpy(SS_path, "bkps/");
       strcat(SS_path, path);
 
       printf("Copying path %s\n", path);
