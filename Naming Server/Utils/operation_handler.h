@@ -635,8 +635,16 @@ char *copy_file(char *source, char *destination)
   strcpy(destination_path, destination);
   strcpy(tempSourcePath, source);
 
-  fileName = strrchr(tempSourcePath, '/');
-  fileName++;
+  // check if the source path contains a '/'
+  if (strrchr(tempSourcePath, '/') != NULL)
+  {
+    fileName = strrchr(tempSourcePath, '/');
+    fileName++;
+  }
+  else
+  {
+    strcpy(fileName, source);
+  }
 
   strcat(destination_path, fileName);
 

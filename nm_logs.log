@@ -1,0 +1,67 @@
+[0;36mNM > Connected to storage server with IP 172.20.10.3
+[0m[0;32mssinit
+5000 5001
+A/
+A/aa.txt
+SS1_file.txt
+SS1_file2.txt
+[0mList of all connected servers : 
+[0;36mNM > Number of storage servers connected: 1
+[0m[0;36mNM > Connected to storage server with IP 172.20.10.3
+[0m[0;32mssinit
+5002 5003
+SS2_file2.txt
+SS2_file.txt
+B/
+B/aa.txt
+[0mList of all connected servers : 
+[0;36mNM > Number of storage servers connected: 2
+[0m[0;36mConnected to client 172.20.10.3
+[0mClient > LS
+Client > COPY SS2_file.txt B/
+[0;32mCopying file SS2_file.txt to B/
+[0m[0;36mNM > Connected to storage server with IP 172.20.10.3
+[0m[0;32mssinit
+5000 5001
+A/
+A/aa.txt
+SS1_file.txt
+SS1_file2.txt
+[0mList of all connected servers : 
+[0;36mNM > Number of storage servers connected: 1
+[0m[0;36mNM > Connected to storage server with IP 172.20.10.3
+[0m[0;32mssinit
+5002 5003
+SS2_file2.txt
+SS2_file.txt
+B/
+B/aa.txt
+[0mList of all connected servers : 
+[0;36mNM > Number of storage servers connected: 2
+[0m[0;36mConnected to client 172.20.10.3
+[0mClient > LS
+Client > COPY SS1_file.txt B/
+[0;32mCopying file SS1_file.txt to B/
+[0mCreating a file in 172.20.10.3:5002
+[0;36mConnecting to the SS at 172.20.10.3:5002
+[0m[0;36mCreating socket via port 8082
+[0mSS < CREATE B/SS1_file.txt
+[0;32mSS > Empty File created successfully in the destination SS
+[0m[0;32mSS > CREATED
+[0mClosing the socket
+> NM : Created empty file in the destination server
+> NM :  Created the temporary file in the NM!
+SS < NMREAD SS1_file.txt
+Getting contents of SS1_file.txt from 172.20.10.3:5000
+[0;36mConnecting to the SS at 172.20.10.3:5000
+[0m[0;36mCreating socket via port 8082
+[0m[0;32mSS > This is SS1 file1 contents
+> NM : Read the contents of the file to be copied and stored them temporarily
+Opened the temporary file SS1_file.txt_temp for reading
+The message to be sent to the SS is : NMWRITE B/SS1_file.txt This is SS1 file1 contents
+
+[0;36mConnecting to the SS at 172.20.10.3:5002
+[0m[0;36mCreating socket via port 8082
+[0m[0;32mSS > File copied successfully
+[0m> NM : Wrote the contents of the temporary file to the destination file path
+  Client > LS
