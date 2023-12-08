@@ -938,8 +938,8 @@ void backup_init()
       ValueStruct vs2 = {bkp_2_SS->ip, bkp_2_SS->nm_port, bkp_2_SS->client_port, 0, 0};
       insert(bkp_accessible_paths_hashmap, SS_path, vs2);
       // print the contents of the backup hashmap
-      printf("Printing the contents of the backup hashmap\n");
-      print_hashmap(bkp_accessible_paths_hashmap);
+      // printf("Printing the contents of the backup hashmap\n");
+      // print_hashmap(bkp_accessible_paths_hashmap);
     }
 
     temp = temp->next;

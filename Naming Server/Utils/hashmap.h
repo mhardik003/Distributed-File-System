@@ -394,6 +394,9 @@ char **find_by_ip(HashmapItem *hashmap[], const char *ip, int port)
             item = item->next;
         }
     }
+
+    // sort the keys in alphabetical order
+    sort_contents(keys, num_keys);
     return keys;
 }
 
