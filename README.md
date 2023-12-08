@@ -1,4 +1,4 @@
-# DISTRIBUTED FILE SYSTEM
+# Distributed File System
 
 ![](./images/output.gif)
 
