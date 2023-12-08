@@ -12,7 +12,6 @@ Welcome to our Distributed File System (DFS) project, a modern solution to data 
 - **Data Distribution** : Efficiently spreads data across various servers, enhancing storage capabilities and reliability.
 - **Abstraction Layer** : The naming server masks the distributed nature, offering a simple and cohesive user experience.
 - **Scalability** : Easily scales to accommodate growing data and user demands.
-- 
 - **Fault Tolerance** : Ensures data availability and consistency, even in the event of server failures. 
 
 `(NOTE : The redundancy/backups part of the Project PDF isn't fully functional yet and might have some bugs, so please fix it/take care of it before using)`
@@ -76,4 +75,4 @@ hostname -I
 
 <br>
 <br>
-Feel free to raise issue contribute to the project.
+Feel free to raise issues and contribute to the project.
