@@ -1,11 +1,13 @@
 # DISTRIBUTED FILE SYSTEM
 
-## Description
+![](./images/output.gif)
+
 
 Distributed File System by creating a nameserver which stores the mapping of the file path to the storage server and the storage server which stores the file and the client which can access the file from the storage server.
 Welcome to our Distributed File System (DFS) project, a modern solution to data storage challenges. This project is an implementation of a DFS in C, designed to efficiently manage data across multiple storage servers. Despite the underlying complexity, it offers a seamless and unified view of the data, akin to interacting with a single server. This is achieved through an intelligent naming server that abstracts the distribution mechanics, providing a user-friendly interface.
 
-**Key Features**
+
+## Key Features
 
 - **Data Distribution** : Efficiently spreads data across various servers, enhancing storage capabilities and reliability.
 - **Abstraction Layer** : The naming server masks the distributed nature, offering a simple and cohesive user experience.

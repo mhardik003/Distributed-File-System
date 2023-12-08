@@ -751,7 +751,7 @@ char *copy(char *filename1, char *filename2)
     return RED "> NM : File not found" reset;
   }
 
-  if (filename2[strlen(filename2) - 1] == '/')
+  if (filename2[strlen(filename2) - 1] != '/')
   {
     printf(RED "Cannot copy to a file\n" reset);
     return RED "> NM : Cannot copy to a file" reset;
@@ -760,7 +760,6 @@ char *copy(char *filename1, char *filename2)
   // check if the filename ends in a '/'
   if (filename1[strlen(filename1) - 1] != '/')
   {
-
     return copy_file(filename1, filename2);
   }
   else
