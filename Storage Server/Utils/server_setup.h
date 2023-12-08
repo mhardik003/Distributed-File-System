@@ -148,6 +148,7 @@ void connectToServer(int sock, struct sockaddr_in *serv_addr)
 char *readMessage(int sock)
 {
     char *buffer = (char *)malloc(1024 * sizeof(char));
+
     if (buffer == NULL)
     {
         // Handle malloc failure
@@ -173,6 +174,12 @@ void sendInfoToNM()
 {
     // for getting accessible paths
     char *server_ip = (char *)malloc(INET_ADDRSTRLEN);
+    if (server_ip == NULL)
+    {
+        printf("Memory allocation failed\n");
+        return;
+    }
+
     int SS_NM_fd = createServerSocket();
 
     char path[MAX_PATH_LENGTH];
@@ -181,6 +188,12 @@ void sendInfoToNM()
     char *allPathsCopy = (char *)malloc(MAX_TOTAL_LENGTH);
     char *selectedPaths = (char *)malloc(MAX_TOTAL_LENGTH);
     char *firstMessageToNM = (char *)malloc(MAX_TOTAL_LENGTH);
+
+    if (allPaths == NULL || allPathsCopy == NULL || selectedPaths == NULL || firstMessageToNM == NULL)
+    {
+        printf("Memory allocation failed\n");
+        return;
+    }
 
     allPaths[0] = '\0';
     int length = 0;
@@ -213,6 +226,11 @@ void sendInfoToNM()
     printf(BLU "Enter the IP address of the Naming Server: " reset);
     fgets(server_ip, INET_ADDRSTRLEN, stdin);
     name_server_ip = (char *)malloc(INET_ADDRSTRLEN);
+    if (name_server_ip == NULL)
+    {
+        printf("Memory allocation failed\n");
+        return;
+    }
     name_server_ip[0] = '\0';
 
     server_ip[strcspn(server_ip, "\n")] = 0; // Remove newline character if present

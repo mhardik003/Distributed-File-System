@@ -8,8 +8,18 @@
 #define YEL "\e[0;33m"
 #define reset "\e[0m"
 
+// Function Declarations
+void *handleClientConnection(void *arg);
+void *handleNMConnection(void *arg);
+void *listenForClients(void *arg);
+void *listenFromNameServer(void *arg);
+
 void *handleClientConnection(void *arg)
 {
+    /*
+        Thread handler function to handle the connection with the client
+    */
+
     connection_info *info = (connection_info *)arg;
     int socket = info->socket_desc;
     char ip_address[INET_ADDRSTRLEN];
@@ -36,6 +46,10 @@ void *handleClientConnection(void *arg)
 
 void *handleNMConnection(void *arg)
 {
+    /*
+        Thread handler function to handle the connection with the Name Server
+    */
+
     connection_info *info = (connection_info *)arg;
     int socket = info->socket_desc;
     char ip_address[INET_ADDRSTRLEN];
@@ -62,6 +76,10 @@ void *handleNMConnection(void *arg)
 
 void *listenForClients(void *NM_client_fd)
 {
+    /*
+        Function to actively listen for connections from the clients
+    */
+
     int client_fd = *(int *)NM_client_fd;
     int new_socket;
 
@@ -82,6 +100,12 @@ void *listenForClients(void *NM_client_fd)
         {
             printf(GRN "Client connected with IP address %s and port %d\n" reset, ip_buffer, ntohs(client_address.sin_port));
             connection_info *info = (connection_info *)malloc(sizeof(connection_info));
+            if (info == NULL)
+            {
+                printf(RED "Memory allocation failed\n" reset);
+                return NULL;
+            }
+
             info->socket_desc = new_socket;
             strcpy(info->ip_address, ip_buffer);
             pthread_t client_thread;
@@ -93,6 +117,10 @@ void *listenForClients(void *NM_client_fd)
 
 void *listenFromNameServer(void *NM_SS_fd)
 {
+    /*
+        Function to actively listen for connections from the Name Server
+    */
+   
     int NM_SS_socket = *(int *)NM_SS_fd;
     int new_socket;
 
@@ -113,6 +141,12 @@ void *listenFromNameServer(void *NM_SS_fd)
         {
             printf(CYN "Name Server connected with IP address %s and port %d\n" reset, ip_buffer, ntohs(nm_address.sin_port));
             connection_info *info = (connection_info *)malloc(sizeof(connection_info));
+            if (info == NULL)
+            {
+                printf(RED "Memory allocation failed\n" reset);
+                return NULL;
+            }
+
             info->socket_desc = new_socket;
             strcpy(info->ip_address, ip_buffer);
             pthread_t nm_thread;

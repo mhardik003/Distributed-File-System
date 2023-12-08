@@ -80,21 +80,4 @@ void displayList(ListNode *node)
     }
 }
 
-// int main() {
-//     Node *head = NULL;
-
-//     insertNode(&head, "192.168.1.1", 8080);
-//     insertNode(&head, "10.0.0.1", 8000);
-//     displayList(head);
-
-//     deleteNode(&head, "192.168.1.1", 8080);
-//     printf("After deletion:\n");
-//     displayList(head);
-
-//     // Remember to free the linked list here
-//     // ...
-
-//     return 0;
-// }
-
 #endif

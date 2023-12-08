@@ -8,6 +8,7 @@
 #include "utils.h"
 #include "server_setup.h"
 
+// Function Definitions
 char *operation_handler(char **inputs, int num_inputs);
 int connect_to_ss(char *SS_ip, int SS_port);
 ValueStruct *check_existence(char *input_check);
@@ -32,6 +33,12 @@ char *operation_handler(char **inputs, int num_inputs)
   /*
     Main function to handle the operations which calls the relevant function for the operations
   */
+  if (inputs == NULL || num_inputs < 1)
+  {
+    printf(RED "Encountered invalid operation\n" reset);
+    return RED "> NM : Invalid operation" reset;
+  }
+
   if (strcmp(inputs[0], "LS") == 0)
   {
     return LS();
@@ -93,6 +100,12 @@ int connect_to_ss(char *SS_ip, int SS_port)
     Function to create a connection for privileged functions between NM and SS
   */
 
+  if (SS_ip == NULL || SS_port == 0)
+  {
+    printf(RED "Invalid IP or Port\n" reset);
+    return -1;
+  }
+
   int sock;
   struct sockaddr_in serv_addr, cli_addr;
   char server_ip[INET_ADDRSTRLEN]; // buffer for the IP address
@@ -134,6 +147,12 @@ ValueStruct *check_existence(char *input_check)
   char *lastSlash;
   char *folder_name = (char *)malloc(1000 * sizeof(char));
   char *file_name = (char *)malloc(1000 * sizeof(char));
+
+  if (folder_name == NULL || file_name == NULL)
+  {
+    printf(RED "Malloc failed\n" reset);
+    return NULL;
+  }
 
   // Find the last occurrence of '/'
   lastSlash = strrchr(input_check, '/');
@@ -182,12 +201,27 @@ ValueStruct *check_existence(char *input_check)
 
 char *create(char *input)
 {
+  /*
+    Function to create a file/folder via NM
+  */
+
+  if (input == NULL)
+  {
+    return RED "> NM : Invalid path" reset;
+  }
 
   printf(GRN "Creating file %s\n" reset, input);
   char *input_check;
 
   // copy the input to a new string
   input_check = (char *)malloc(1000 * sizeof(char));
+
+  if (input_check == NULL)
+  {
+    printf(RED "Malloc failed\n" reset);
+    return RED "> NM : Malloc failed" reset;
+  }
+
   strcpy(input_check, input);
 
   ValueStruct *myStruct;
@@ -325,6 +359,11 @@ char *read_write_getinfo_file(char *filename, char *operation)
   }
 
   char *response = (char *)malloc(1000 * sizeof(char));
+  if (response == NULL)
+  {
+    printf(RED "Malloc failed\n" reset);
+    return RED "> NM : Malloc failed" reset;
+  }
   strcpy(response, "lookup response\nip:");
   strcat(response, myStruct->ip);
   strcat(response, "\nclient_port:");
@@ -337,9 +376,19 @@ char *read_write_getinfo_file(char *filename, char *operation)
 
 char *create_file_in_destination_server(ValueStruct *SS2, char *destination_path)
 {
-  // connect to SS2 to create the file there
+  /*
+    Function to create an empty file in the destination server
+    Used for the copy function
+  */
 
   char *message_to_SS = (char *)malloc(1024 * sizeof(char));
+
+  if (message_to_SS == NULL)
+  {
+    printf(RED "Malloc failed\n" reset);
+    return RED "> NM : Malloc failed" reset;
+  }
+
   printf("Creating a file in %s:%d\n", SS2->ip, SS2->nm_port);
   int sock2 = connect_to_ss(SS2->ip, SS2->nm_port);
   // create the file in destination server
@@ -374,9 +423,19 @@ char *create_file_in_destination_server(ValueStruct *SS2, char *destination_path
 
 char *create_folder_in_destination_server(ValueStruct *SS2, char *destination_path)
 {
-  // connect to SS2 to create the folder there
+  /*
+    Function to create a folder in the destination server
+    Used for the copy function
+  */
+
   char *foldername = (char *)malloc(1024 * sizeof(char));
   char *message_to_SS = (char *)malloc(1024 * sizeof(char));
+
+  if (foldername == NULL || message_to_SS == NULL)
+  {
+    printf(RED "Malloc failed\n" reset);
+    return RED "> NM : Malloc failed" reset;
+  }
 
   int sock2 = connect_to_ss(SS2->ip, SS2->nm_port);
 
@@ -422,6 +481,11 @@ char *read_and_save_contents_from_source_server(ValueStruct *SS1, char *source)
   char *filename = (char *)malloc(1024 * sizeof(char));
   char *message_to_SS = (char *)malloc(1024);
   char *tempSourcePath = (char *)malloc(1024 * sizeof(char));
+  if (filename == NULL || message_to_SS == NULL || tempSourcePath == NULL)
+  {
+    printf(RED "Malloc failed\n" reset);
+    return RED "> NM : Malloc failed" reset;
+  }
 
   strcpy(tempSourcePath, source);
 
@@ -477,7 +541,11 @@ char *write_contents_to_destination_server(ValueStruct *SS2, char *destination_p
   char *filename = (char *)malloc(1024 * sizeof(char));
   char *message_to_ss = (char *)malloc(1024 * sizeof(char));
   char *tempSourcePath = (char *)malloc(1024);
-
+  if (filename == NULL || message_to_ss == NULL || tempSourcePath == NULL)
+  {
+    printf(RED "Malloc failed\n" reset);
+    return RED "> NM : Malloc failed" reset;
+  }
   // Create the message to be sent to the SS
   strcpy(message_to_ss, "NMWRITE ");
   strcat(message_to_ss, destination_path);
@@ -509,6 +577,11 @@ char *write_contents_to_destination_server(ValueStruct *SS2, char *destination_p
 
   // read and store the filecontents in a string
   char *line = (char *)malloc(1024);
+  if (line == NULL)
+  {
+    printf(RED "Malloc failed\n" reset);
+    return RED "> NM : Malloc failed" reset;
+  }
   while (fgets(line, 1024, fp) != NULL)
   {
     // Check for message_to_ss overflow
@@ -553,6 +626,12 @@ char *copy_file(char *source, char *destination)
   char *fileName = (char *)malloc(1024 * sizeof(char));
   char *tempSourcePath = (char *)malloc(1024 * sizeof(char));
 
+  if (destination_path == NULL || fileName == NULL || tempSourcePath == NULL)
+  {
+    printf(RED "Malloc failed\n" reset);
+    return RED "> NM : Malloc failed" reset;
+  }
+
   strcpy(destination_path, destination);
   strcpy(tempSourcePath, source);
 
@@ -588,6 +667,11 @@ char *copy_directory(char *source, char *destination)
   ValueStruct *SS1;
   ValueStruct *SS2;
   char *temp = (char *)malloc(1024);
+  if (temp == NULL)
+  {
+    printf(RED "Malloc failed\n" reset);
+    return RED "> NM : Malloc failed" reset;
+  }
 
   SS1 = getFromCache(cache, source);
   SS2 = getFromCache(cache, destination);
@@ -697,6 +781,12 @@ char *LS()
   // printCache(cache);
   // printf("Keys are: %s\n", keys);
   char *response = (char *)malloc(1000);
+  if (response == NULL)
+  {
+    printf(RED "Malloc failed\n" reset);
+    return RED "> NM : Malloc failed" reset;
+  }
+
   strcpy(response, GRN "> NM : Listing all the accessible paths" reset);
   strcat(response, "\n");
   strcat(response, keys);
@@ -722,6 +812,12 @@ void backup_init()
 
     // create a value struct for the new SS
     ValueStruct *SS = (ValueStruct *)malloc(sizeof(ValueStruct));
+    if (SS == NULL)
+    {
+      printf(RED "Malloc failed\n" reset);
+      return;
+    }
+
     SS->ip = ip;
     SS->nm_port = port;
 
@@ -740,6 +836,12 @@ void backup_init()
     // find the two servers to backup the content into
     ValueStruct *bkp_1_SS = (ValueStruct *)malloc(sizeof(ValueStruct));
     ValueStruct *bkp_2_SS = (ValueStruct *)malloc(sizeof(ValueStruct));
+
+    if (bkp_1_SS == NULL || bkp_2_SS == NULL)
+    {
+      printf(RED "Malloc failed\n" reset);
+      return;
+    }
 
     int num_backups = 0;
 
@@ -784,6 +886,11 @@ void backup_init()
         continue;
       }
       char *SS_path = (char *)malloc(1000 * sizeof(char));
+      if (SS_path == NULL)
+      {
+        printf(RED "Malloc failed\n" reset);
+        return;
+      }
 
       strcpy(SS_path, "bkps/");
       strcat(SS_path, path);

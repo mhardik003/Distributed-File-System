@@ -18,7 +18,8 @@ int main()
     // This hashmap stores the accessible_paths of the SS's as the key and the related SS info in a struct as a value to the key
     // init_hashmap(accessible_paths_hashmap);
     cache = (LRUCache *)malloc(sizeof(LRUCache));
-    if (cache == NULL) {
+    if (cache == NULL)
+    {
         perror("Failed to allocate memory for LRUCache");
     }
     cacheInit(cache);
@@ -36,7 +37,7 @@ int main()
 
     pthread_t client_thread, ss_thread; // threads for listening and assigning individual threads to multiple clients and SS's
 
-    pthread_create(&client_thread, NULL, listenForClients, (void *)&NM_client_fd); 
+    pthread_create(&client_thread, NULL, listenForClients, (void *)&NM_client_fd);
     pthread_create(&ss_thread, NULL, listenForStorageServers, (void *)&NM_SS_fd);
 
     // Join threads (optional, depending on your shutdown strategy)

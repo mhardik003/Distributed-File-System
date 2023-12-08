@@ -3,8 +3,27 @@
 
 #include "utils.h"
 
+// Function Definitions
+int createServerSocket();
+void bindServerSocket(int server_fd, struct sockaddr_in *address);
+void startListening(int server_fd);
+int acceptConnection(int server_fd, struct sockaddr_in *address, char *ip_buffer);
+void sendMessage(int socket, char *message);
+char *readMessage(int sock);
+void connectToServer(int sock, struct sockaddr_in *serv_addr);
+
 int createServerSocket()
 {
+  /*
+    Function to create a server socket
+
+    Parameters:
+    None
+
+    Returns:
+    int : the socket descriptor
+  */
+
   int sock = socket(AF_INET, SOCK_STREAM, 0);
   if (sock == -1)
   {
@@ -26,6 +45,16 @@ int createServerSocket()
 
 void bindServerSocket(int server_fd, struct sockaddr_in *address)
 {
+  /*
+    Function to bind the server socket to the provided address
+
+    Parameters:
+    int server_fd : the socket descriptor
+    struct sockaddr_in *address : the address to bind to
+
+    Returns:
+    None
+  */
   if (bind(server_fd, (struct sockaddr *)address, sizeof(*address)) < 0)
   {
     perror("bind failed");
@@ -36,6 +65,15 @@ void bindServerSocket(int server_fd, struct sockaddr_in *address)
 
 void startListening(int server_fd)
 {
+  /*
+    Function to start listening for connections on the provided socket
+
+    Parameters:
+    int server_fd : the socket descriptor
+
+    Returns:
+    None
+  */
   if (listen(server_fd, 5) < 0)
   {
     perror("listen");
@@ -45,6 +83,18 @@ void startListening(int server_fd)
 
 int acceptConnection(int server_fd, struct sockaddr_in *address, char *ip_buffer)
 {
+
+  /*
+    Function to accept a connection on the provided socket
+
+    Parameters:
+    int server_fd : the socket descriptor
+    struct sockaddr_in *address : the address of the client
+    char *ip_buffer : the buffer to store the IP address of the client
+
+    Returns:
+    int : the socket descriptor of the new connection
+  */
   int addrlen = sizeof(*address);
   int new_socket = accept(server_fd, (struct sockaddr *)address, (socklen_t *)&addrlen);
   if (new_socket < 0)
@@ -62,12 +112,36 @@ int acceptConnection(int server_fd, struct sockaddr_in *address, char *ip_buffer
 
 void sendMessage(int socket, char *message)
 {
-  send(socket, message, strlen(message), 0);
+  /*
+    Function to send a message to the provided socket
+
+    Parameters:
+    int socket : the socket descriptor
+    char *message : the message to send
+
+    Returns:
+    None
+  */
+  if (send(socket, message, strlen(message), 0) < 0)
+  {
+    perror("Send failed");
+    close(socket);
+    // exit(EXIT_FAILURE);
+  }
   // printf("Message sent!\n");
 }
 
 char *readMessage(int sock)
 {
+  /*
+    Function to read a message from the provided socket
+
+    Parameters:
+    int sock : the socket descriptor
+
+    Returns:
+    char * : the message read from the socket
+  */
   char *buffer = (char *)malloc(1024 * sizeof(char));
   if (buffer == NULL)
   {
@@ -92,6 +166,17 @@ char *readMessage(int sock)
 
 void connectToServer(int sock, struct sockaddr_in *serv_addr)
 {
+  /*
+    Function to connect to the provided server
+
+    Parameters:
+    int sock : the socket descriptor
+    struct sockaddr_in *serv_addr : the address of the server
+
+    Returns:
+    None
+  */
+
   if (connect(sock, (struct sockaddr *)serv_addr, sizeof(*serv_addr)) < 0)
   {
     perror(RED "Connection Failed" reset);

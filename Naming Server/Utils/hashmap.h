@@ -5,12 +5,17 @@
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
-
 #include "utils.h"
+
+#define MAX_HASHMAP_SIZE 1000
 
 // Define the structure of the value
 typedef struct
 {
+    /*
+        Structure of the value stored in the hashmap
+    */
+
     char *ip;
     int nm_port;
     int client_port;
@@ -28,12 +33,27 @@ typedef struct HashmapItem
 } HashmapItem;
 
 // Function Declarations
+unsigned int hash(const char *key);
+void init_hashmap(HashmapItem *hashmap[]);
+void cleanup_hashmap(HashmapItem *hashmap[]);
+void insert(HashmapItem *hashmap[], const char *key, ValueStruct value);
+ValueStruct *find(HashmapItem *hashmap[], const char *key);
+void remove_key(HashmapItem *hashmap[], const char *key);
+void remove_folder(HashmapItem *hashmap[], const char *folder);
+char *get_all_keys(HashmapItem *hashmap[]);
+char **get_dest_contents(HashmapItem *hashmap[], char *folder);
+char **get_contents(HashmapItem *hashmap[], char *folder);
+void sort_contents(char **contents, int num_contents);
+void remove_by_ip(HashmapItem *hashmap[], const char *ip);
+char **find_by_ip(HashmapItem *hashmap[], const char *ip, int port);
+void print_hashmap(HashmapItem *hashmap[]);
 
-#define MAX_HASHMAP_SIZE 1000
-
-// Hash function
 unsigned int hash(const char *key)
 {
+    /*
+        Hash function used to hash the key
+    */
+
     unsigned long int value = 0;
     unsigned int i = 0;
     unsigned int key_len = strlen(key);
@@ -46,18 +66,24 @@ unsigned int hash(const char *key)
     return value % HASH_MAP_SIZE;
 }
 
-// Initialize the hashmap
 void init_hashmap(HashmapItem *hashmap[])
 {
+    /*
+        Initialize the hashmap
+    */
+
     for (int i = 0; i < HASH_MAP_SIZE; ++i)
     {
         hashmap[i] = NULL;
     }
 }
 
-// Cleanup the hashmap
 void cleanup_hashmap(HashmapItem *hashmap[])
 {
+    /*
+        Cleanup the hashmap by freeing all the memory
+    */
+
     for (int i = 0; i < HASH_MAP_SIZE; ++i)
     {
         HashmapItem *item = hashmap[i];
@@ -71,20 +97,32 @@ void cleanup_hashmap(HashmapItem *hashmap[])
     }
 }
 
-// Insert function
 void insert(HashmapItem *hashmap[], const char *key, ValueStruct value)
 {
+    /*
+        Function to insert a key-value pair in the hashmap
+    */
+
     unsigned int index = hash(key);
     HashmapItem *newItem = (HashmapItem *)malloc(sizeof(HashmapItem));
+    if (newItem == NULL)
+    {
+        perror("Memory allocation failed");
+        return;
+    }
+
     newItem->key = strdup(key);
     newItem->value = value;
     newItem->next = hashmap[index];
     hashmap[index] = newItem;
 }
 
-// Find function
 ValueStruct *find(HashmapItem *hashmap[], const char *key)
 {
+    /*
+        Function to find a key in the hashmap and return its value
+    */
+
     unsigned int index = hash(key);
     HashmapItem *item = hashmap[index];
     while (item != NULL)
@@ -98,9 +136,12 @@ ValueStruct *find(HashmapItem *hashmap[], const char *key)
     return NULL;
 }
 
-// Remove function
 void remove_key(HashmapItem *hashmap[], const char *key)
 {
+    /*
+        Function to remove a key from the hashmap
+    */
+
     unsigned int index = hash(key);
     HashmapItem *current = hashmap[index];
     HashmapItem *prev = NULL;
@@ -127,7 +168,11 @@ void remove_key(HashmapItem *hashmap[], const char *key)
 
 void remove_folder(HashmapItem *hashmap[], const char *folder)
 {
-    // remove all the keys that start with the folder
+    /*
+     Function to remove all the keys starting with the given folder
+     As all the contents in the folder will have the same starting characters as the folder name
+    */
+
     for (int i = 0; i < HASH_MAP_SIZE; ++i)
     {
         HashmapItem *item = hashmap[i];
@@ -145,8 +190,18 @@ void remove_folder(HashmapItem *hashmap[], const char *folder)
 
 char *get_all_keys(HashmapItem *hashmap[])
 {
-    // concatenate all the keys and return
+    /*
+        Function to get all the keys in the hashmap
+    */
+
     char *all_keys = (char *)malloc(MAX_HASHMAP_SIZE * 100);
+
+    if (all_keys == NULL)
+    {
+        perror("Memory allocation failed");
+        return NULL;
+    }
+
     all_keys[0] = '\0';
     for (int i = 0; i < HASH_MAP_SIZE; ++i)
     {
@@ -163,8 +218,19 @@ char *get_all_keys(HashmapItem *hashmap[])
 
 char **get_dest_contents(HashmapItem *hashmap[], char *folder)
 {
-    // get all the keys that start with the folder
+    /*
+        Used when we want to get the contents of a folder
+        We get all the keys that start with the folder
+        and then remove the folder name from the start of the key
+    */
+
     char **contents = (char **)malloc(MAX_HASHMAP_SIZE * sizeof(char *));
+    if (contents == NULL)
+    {
+        perror("Memory allocation failed");
+        return NULL;
+    }
+
     int num_contents = 0;
     size_t folder_len = strlen(folder);
     for (int i = 0; i < HASH_MAP_SIZE; ++i)
@@ -176,6 +242,11 @@ char **get_dest_contents(HashmapItem *hashmap[], char *folder)
             if (strncmp(item->key, folder, strlen(folder)) == 0 && strcmp(item->key, folder) != 0)
             {
                 contents[num_contents] = (char *)malloc(MAX_HASHMAP_SIZE * sizeof(char));
+                if (contents[num_contents] == NULL)
+                {
+                    perror("Memory allocation failed");
+                    return NULL;
+                }
                 strcpy(contents[num_contents], item->key + folder_len);
                 num_contents++;
             }
@@ -187,8 +258,17 @@ char **get_dest_contents(HashmapItem *hashmap[], char *folder)
 
 char **get_contents(HashmapItem *hashmap[], char *folder)
 {
-    // get all the keys that start with the folder
+    /*
+        Used when we want to get the contents of a folder
+        We get all the keys that start with the folder
+    */
     char **contents = (char **)malloc(MAX_HASHMAP_SIZE * sizeof(char *));
+    if (contents == NULL)
+    {
+        perror("Memory allocation failed");
+        return NULL;
+    }
+
     int num_contents = 0;
     size_t folder_len = strlen(folder);
     for (int i = 0; i < HASH_MAP_SIZE; ++i)
@@ -200,6 +280,11 @@ char **get_contents(HashmapItem *hashmap[], char *folder)
             if (strncmp(item->key, folder, strlen(folder)) == 0 && strcmp(item->key, folder) != 0)
             {
                 contents[num_contents] = (char *)malloc(MAX_HASHMAP_SIZE * sizeof(char));
+                if (contents[num_contents] == NULL)
+                {
+                    perror("Memory allocation failed");
+                    return NULL;
+                }
                 strcpy(contents[num_contents], item->key);
                 num_contents++;
             }
@@ -211,7 +296,10 @@ char **get_contents(HashmapItem *hashmap[], char *folder)
 
 void sort_contents(char **contents, int num_contents)
 {
-    // sort the contents
+    /*
+        Sorts the contents of a folder in alphabetical order
+    */
+
     for (int i = 0; i < num_contents; ++i)
     {
         for (int j = i + 1; j < num_contents; ++j)
@@ -232,6 +320,7 @@ void remove_by_ip(HashmapItem *hashmap[], const char *ip)
         Used when we find out that a server is dead,
         then we remove all the entries related to it
     */
+
     for (int i = 0; i < HASH_MAP_SIZE; ++i)
     {
         HashmapItem *current = hashmap[i];
@@ -279,6 +368,11 @@ char **find_by_ip(HashmapItem *hashmap[], const char *ip, int port)
     */
 
     char **keys = (char **)malloc(MAX_HASHMAP_SIZE * sizeof(char *));
+    if (keys == NULL)
+    {
+        perror("Memory allocation failed");
+        return NULL;
+    }
     int num_keys = 0;
 
     for (int i = 0; i < HASH_MAP_SIZE; ++i)
@@ -289,6 +383,11 @@ char **find_by_ip(HashmapItem *hashmap[], const char *ip, int port)
             if (strcmp(item->value.ip, ip) == 0 && item->value.nm_port == port)
             {
                 keys[num_keys] = (char *)malloc(MAX_HASHMAP_SIZE * sizeof(char));
+                if (keys[num_keys] == NULL)
+                {
+                    perror("Memory allocation failed");
+                    return NULL;
+                }
                 strcpy(keys[num_keys], item->key);
                 num_keys++;
             }
@@ -300,6 +399,10 @@ char **find_by_ip(HashmapItem *hashmap[], const char *ip, int port)
 
 void print_hashmap(HashmapItem *hashmap[])
 {
+    /*
+        Function to print all the key-value pairs in the hashmap
+    */
+
     for (int i = 0; i < HASH_MAP_SIZE; ++i)
     {
         HashmapItem *item = hashmap[i];
@@ -312,28 +415,3 @@ void print_hashmap(HashmapItem *hashmap[])
 }
 
 #endif // HASHMAP_H
-
-/*
-Example Usage:
-int main() {
-    init_hashmap(hashmap);
-
-    // Example usage
-    ValueStruct vs = {"Value1", 42, "Value3"};
-    insert(hashmap, "key1", vs);
-
-    ValueStruct* found = find(hashmap, "key1");
-    if (found != NULL) {
-        printf("Found: %s, %d, %s\n", found->value1, found->value2, found->value3);
-    }
-
-    remove_key(hashmap, "key1");
-    found = find(hashmap, "key1");
-    if (found == NULL) {
-        printf("Key1 not found\n");
-    }
-
-    cleanup_hashmap(hashmap);
-    return 0;
-}
-*/

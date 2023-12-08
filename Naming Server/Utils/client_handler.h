@@ -20,10 +20,21 @@ char *parseInput(char *input)
 
   // array to store tokens
   char **tokens = (char **)malloc(NUM_WORDS_IN_INPUT * sizeof(char *));
-
+  if (!tokens)
+  {
+    printf("Memory allocation failed\n");
+    return NULL;
+    // exit(EXIT_FAILURE);
+  }
   for (int i = 0; i < 10; i++)
   {
     tokens[i] = (char *)malloc(WORD_SIZE_IN_INPUT * sizeof(char));
+    if (!tokens[i])
+    {
+      printf("Memory allocation failed\n");
+      return NULL;
+      // exit(EXIT_FAILURE);
+    }
   }
   int i = 0;
   char *token = strtok(input, " ");
@@ -96,22 +107,36 @@ void *listenForClients(void *arg)
     Function called from main which actively listens for client connections and spawns a new thread
     for each client and calls 'handleClientConnection' for each client
   */
+
   int server_fd = *(int *)arg;
-  
+
   while (1)
   {
     struct sockaddr_in address;
     char ip_buffer[INET_ADDRSTRLEN]; // Buffer to store the IP address
 
     int *new_sock = (int *)malloc(sizeof(int));
+    if (new_sock == NULL)
+    {
+      printf("Memory allocation failed\n");
+      return NULL;
+      // exit(EXIT_FAILURE);
+    }
     *new_sock = acceptConnection(server_fd, &address, ip_buffer);
     printf(CYN "Connected to client %s\n" reset, ip_buffer);
 
     if (*new_sock >= 0)
     {
       pthread_t thread_id;
-      connection_info *info =
-          (connection_info *)malloc(sizeof(connection_info));
+      connection_info *info = (connection_info *)malloc(sizeof(connection_info));
+      
+      if (info == NULL)
+      {
+        printf("Memory allocation failed\n");
+        return NULL;
+        // exit(EXIT_FAILURE);
+      }
+
       info->socket_desc = *new_sock;
       strncpy(info->ip_address, ip_buffer, INET_ADDRSTRLEN);
       pthread_create(&thread_id, NULL, handleClientConnection, (void *)info);

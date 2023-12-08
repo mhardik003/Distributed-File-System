@@ -21,42 +21,62 @@ int MAX_TOTAL_LENGTH = 1000000;
 
 void listFilesRecursively(char *basePath, char *currentPath, char **paths, int *length);
 void getSelectedPaths(char *paths, char *selectedPaths);
-void listFilesRecursively(char *basePath, char *currentPath, char **paths, int *length) {
+
+void listFilesRecursively(char *basePath, char *currentPath, char **paths, int *length)
+{
+    /*
+        Function to list all the files and folders recursively from where the executable is run
+    */
+
     char path[MAX_PATH_LENGTH];
     struct dirent *dp;
     struct stat statbuf;
     DIR *dir = opendir(basePath);
 
-    if (!dir) {
+    if (!dir)
+    {
         return;
     }
 
-    while ((dp = readdir(dir)) != NULL) {
-        if (strcmp(dp->d_name, ".") != 0 && strcmp(dp->d_name, "..") != 0) {
+    while ((dp = readdir(dir)) != NULL)
+    {
+        if (strcmp(dp->d_name, ".") != 0 && strcmp(dp->d_name, "..") != 0)
+        {
             // Construct path correctly, avoiding double slashes
-            if (strlen(currentPath) == 0) {
+            if (strlen(currentPath) == 0)
+            {
                 snprintf(path, sizeof(path), "%s", dp->d_name);
-            } else {
+            }
+            else
+            {
                 snprintf(path, sizeof(path), "%s%s", currentPath, dp->d_name); // Removed the slash here
             }
 
             char fullPath[MAX_PATH_LENGTH];
-            if (basePath[strlen(basePath) - 1] == '/') {
+            if (basePath[strlen(basePath) - 1] == '/')
+            {
                 snprintf(fullPath, sizeof(fullPath), "%s%s", basePath, dp->d_name); // Removed the slash here
-            } else {
+            }
+            else
+            {
                 snprintf(fullPath, sizeof(fullPath), "%s/%s", basePath, dp->d_name);
             }
 
-            if (stat(fullPath, &statbuf) != -1) {
-                if (S_ISDIR(statbuf.st_mode)) {
+            if (stat(fullPath, &statbuf) != -1)
+            {
+                if (S_ISDIR(statbuf.st_mode))
+                {
                     snprintf(*paths + *length, MAX_TOTAL_LENGTH - *length, "%s/\n", path);
                     *length += strlen(path) + 2; // +2 for '/' and '\n'
-                } else {
+                }
+                else
+                {
                     snprintf(*paths + *length, MAX_TOTAL_LENGTH - *length, "%s\n", path);
                     *length += strlen(path) + 1; // +1 for '\n'
                 }
 
-                if (S_ISDIR(statbuf.st_mode)) {
+                if (S_ISDIR(statbuf.st_mode))
+                {
                     char newCurrentPath[MAX_PATH_LENGTH];
                     snprintf(newCurrentPath, sizeof(newCurrentPath), "%s/", path); // Append '/' for recursive call
                     listFilesRecursively(fullPath, newCurrentPath, paths, length);
@@ -67,9 +87,12 @@ void listFilesRecursively(char *basePath, char *currentPath, char **paths, int *
 
     closedir(dir);
 }
-
 void getSelectedPaths(char *paths, char *selectedPaths)
 {
+    /*
+        Function to get the paths selected by the user
+    */
+   
     int num, index;
     char *token;
     char buffer[MAX_TOTAL_LENGTH];

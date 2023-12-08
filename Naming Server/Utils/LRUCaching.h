@@ -12,6 +12,10 @@
 
 typedef struct Node
 {
+    /*
+        Structure of a node in the linked list for the LRU cache
+    */
+
     char key[256]; // Assuming keys are strings
     ValueStruct value;
     struct Node *prev, *next;
@@ -19,15 +23,43 @@ typedef struct Node
 
 typedef struct
 {
+    /*
+        Structure of the LRU cache
+    */
+
     Node *head, *tail;
     HashmapItem *hashmap[MAX_HASHMAP_SIZE];
     Node *cacheNodes[CACHE_SIZE];
     int size;
 } LRUCache;
 
+// Function Declarations
+Node *createNode(const char *key, ValueStruct value);
+void detachNode(LRUCache *cache, Node *node);
+void attachNodeAtFront(LRUCache *cache, Node *node);
+void evictIfNecessary(LRUCache *cache);
+void removeFolderFromCache(LRUCache *cache, const char *folder);
+void removeFileFromCache(LRUCache *cache, const char *fileKey);
+int isFileInCache(LRUCache *cache, const char *fileKey);
+void putInCache(LRUCache *cache, const char *key, ValueStruct value);
+ValueStruct *getFromCache(LRUCache *cache, const char *key);
+void cacheInit(LRUCache *cache);
+void cacheCleanup(LRUCache *cache);
+void printCache(const LRUCache *cache);
+
 Node *createNode(const char *key, ValueStruct value)
 {
+    /*
+        Creates a new node for the LRU cache
+    */
+
     Node *node = (Node *)malloc(sizeof(Node));
+    if (node == NULL)
+    {
+        perror("Error in creating a new node");
+        exit(EXIT_FAILURE);
+    }
+    
     strcpy(node->key, key);
     node->value = value;
     node->prev = node->next = NULL;
@@ -36,6 +68,10 @@ Node *createNode(const char *key, ValueStruct value)
 
 void detachNode(LRUCache *cache, Node *node)
 {
+    /*
+        Detaches the given node from the linked list
+    */
+
     if (node->prev)
     {
         node->prev->next = node->next;
@@ -54,63 +90,54 @@ void detachNode(LRUCache *cache, Node *node)
     }
 }
 
-// void attachNodeAtFront(LRUCache *cache, Node *node)
-// {
-//     node->next = cache->head;
-//     node->prev = NULL;
-//     if (cache->head)
-//     {
-//         cache->head->prev = node;
-//     }
-//     cache->head = node;
-//     if (cache->tail == NULL)
-//     {
-//         cache->tail = node;
-//     }
-// }
+void attachNodeAtFront(LRUCache *cache, Node *node)
+{
 
-void attachNodeAtFront(LRUCache *cache, Node *node) {
-    // First, detach the node if it's already in the list
-    if (node->prev != NULL || node->next != NULL) {
+    /*
+        Attaches the given node at the front of the linked list
+        Used when a node is accessed or added to the cache
+   */
+
+    if (node->prev != NULL || node->next != NULL)
+    {
         detachNode(cache, node);
     }
 
     // Now, attach it at the front
     node->next = cache->head;
     node->prev = NULL;
-    if (cache->head) {
+    if (cache->head)
+    {
         cache->head->prev = node;
     }
     cache->head = node;
-    if (cache->tail == NULL) {
+    if (cache->tail == NULL)
+    {
         cache->tail = node;
     }
 }
 
-// void evictIfNecessary(LRUCache *cache)
-// {
-//     if (cache->size >= CACHE_SIZE)
-//     {
-//         // Remove the least recently used (LRU) item
-//         Node *lru = cache->tail;
-//         detachNode(cache, lru);
-//         // remove_key(cache->hashmap, lru->key); // Remove from hashmap
-//         free(lru);
-//         cache->size--;
-//     }
-// }
+void evictIfNecessary(LRUCache *cache)
+{
 
-void evictIfNecessary(LRUCache *cache) {
-    if (cache->size >= CACHE_SIZE) {
+    /*
+        Evicts the least recently used item from the cache if the cache is full
+    */
+
+    if (cache->size >= CACHE_SIZE)
+    {
         // Remove the least recently used (LRU) item
         Node *lru = cache->tail;
         detachNode(cache, lru);
 
         // Update cacheNodes array
-        for (int i = 0; i < cache->size; i++) {
-            if (cache->cacheNodes[i] == lru) {
+        for (int i = 0; i < cache->size; i++)
+        {
+            if (cache->cacheNodes[i] == lru)
+            {
                 // Move all subsequent nodes one position to the left
-                for (int j = i; j < cache->size - 1; j++) {
+                for (int j = i; j < cache->size - 1; j++)
+                {
                     cache->cacheNodes[j] = cache->cacheNodes[j + 1];
                 }
                 break;
@@ -123,9 +150,13 @@ void evictIfNecessary(LRUCache *cache) {
     }
 }
 
-
 void removeFolderFromCache(LRUCache *cache, const char *folder)
 {
+    /*
+        Removes all the files in the given folder from the cache
+        Used when a folder is deleted
+    */
+
     Node *current = cache->head;
     while (current != NULL)
     {
@@ -150,6 +181,11 @@ void removeFolderFromCache(LRUCache *cache, const char *folder)
 
 void removeFileFromCache(LRUCache *cache, const char *fileKey)
 {
+    /*
+        Removes the given file from the cache
+        Used when a file is deleted
+    */
+
     Node *current = cache->head;
     Node *toRemove = NULL;
 
@@ -195,6 +231,11 @@ void removeFileFromCache(LRUCache *cache, const char *fileKey)
 
 int isFileInCache(LRUCache *cache, const char *fileKey)
 {
+
+    /*
+        Checks if the given file is present in the cache
+    */
+
     Node *current = cache->head;
     while (current != NULL)
     {
@@ -207,53 +248,33 @@ int isFileInCache(LRUCache *cache, const char *fileKey)
     return 0;
 }
 
-// void putInCache(LRUCache *cache, const char *key, ValueStruct value) {
-//     Node *existingNode = NULL;
+void putInCache(LRUCache *cache, const char *key, ValueStruct value)
+{
 
-//     // Check if the key already exists in the cache
-//     for (int i = 0; i < cache->size; i++) {
-//         if (strcmp(cache->cacheNodes[i]->key, key) == 0) {
-//             existingNode = cache->cacheNodes[i];
-//             break;
-//         }
-//     }
+    /*
+        Adds the given key-value pair of the Hashmap to the cache
+    */
 
-//     if (existingNode) {
-//         // Update the value of the existing node
-//         existingNode->value = value;
-//         attachNodeAtFront(cache, existingNode);
-//     } else {
-//         // Create a new node and add it to the front of the cache
-//         Node *newNode = createNode(key, value);
-//         attachNodeAtFront(cache, newNode);
-//         cache->cacheNodes[cache->size++] = newNode;
-
-//         // Insert into hashmap only if it doesn't already exist
-//         if (find(cache->hashmap, key) == NULL) {
-//             insert(cache->hashmap, key, value);
-//         }
-
-//         // Evict the least recently used item if necessary
-//         evictIfNecessary(cache);
-//     }
-// }
-
-void putInCache(LRUCache *cache, const char *key, ValueStruct value) {
     Node *existingNode = NULL;
 
     // Check if the key already exists in the cache
-    for (int i = 0; i < cache->size; i++) {
-        if (strcmp(cache->cacheNodes[i]->key, key) == 0) {
+    for (int i = 0; i < cache->size; i++)
+    {
+        if (strcmp(cache->cacheNodes[i]->key, key) == 0)
+        {
             existingNode = cache->cacheNodes[i];
             break;
         }
     }
 
-    if (existingNode) {
+    if (existingNode)
+    {
         // Update the value of the existing node
         existingNode->value = value;
         attachNodeAtFront(cache, existingNode);
-    } else {
+    }
+    else
+    {
         // Check if we need to evict a node first
         evictIfNecessary(cache);
 
@@ -262,21 +283,26 @@ void putInCache(LRUCache *cache, const char *key, ValueStruct value) {
         attachNodeAtFront(cache, newNode);
 
         // Add the new node to the cacheNodes array
-        if (cache->size < CACHE_SIZE) {
+        if (cache->size < CACHE_SIZE)
+        {
             cache->cacheNodes[cache->size] = newNode;
             cache->size++;
         }
 
         // Insert into hashmap only if it doesn't already exist
-        if (find(cache->hashmap, key) == NULL) {
+        if (find(cache->hashmap, key) == NULL)
+        {
             insert(cache->hashmap, key, value);
         }
     }
 }
 
-
 ValueStruct *getFromCache(LRUCache *cache, const char *key)
 {
+    /*
+        Returns the value corresponding to the given key from the cache
+    */
+
     for (int i = 0; i < cache->size; i++)
     {
         if (strcmp(cache->cacheNodes[i]->key, key) == 0)
@@ -300,6 +326,10 @@ ValueStruct *getFromCache(LRUCache *cache, const char *key)
 
 void cacheInit(LRUCache *cache)
 {
+    /*
+        Initializes the cache
+    */
+
     cache->head = cache->tail = NULL;
     cache->size = 0;
     init_hashmap(cache->hashmap);
@@ -307,6 +337,10 @@ void cacheInit(LRUCache *cache)
 
 void cacheCleanup(LRUCache *cache)
 {
+    /*
+        Frees all the memory used by the cache
+    */
+
     Node *current = cache->head;
     while (current != NULL)
     {
@@ -319,6 +353,10 @@ void cacheCleanup(LRUCache *cache)
 
 void printCache(const LRUCache *cache)
 {
+    /*
+        Prints the contents of the cache
+    */
+
     Node *current = cache->head;
     printf("Cache Contents:\n");
     while (current != NULL)

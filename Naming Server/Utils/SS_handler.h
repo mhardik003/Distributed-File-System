@@ -6,6 +6,11 @@
 #include "utils.h"
 int num_storage_servers = 0;
 
+int parse_ssinit(char *init_message, char *ip_address);
+char *process_SS_msg(int sock, char *ip_address);
+void *handleStorageServerConnection(void *arg);
+void *listenForStorageServers(void *arg);
+
 int parse_ssinit(char *init_message, char *ip_address)
 {
   /*
@@ -190,14 +195,25 @@ void *listenForStorageServers(void *arg)
     char ip_buffer[INET_ADDRSTRLEN]; // Buffer to store the IP address
 
     int *new_sock = (int *)malloc(sizeof(int));
+    if (new_sock == NULL)
+    {
+      printf(RED "NM > Memory allocation failed\n" reset);
+      return NULL;
+    }
+
     *new_sock = acceptConnection(server_fd, &address, ip_buffer);
     printf(CYN "NM > Connected to storage server with IP %s\n" reset, ip_buffer);
 
     if (*new_sock >= 0) // if the connection is successful
     {
       pthread_t thread_id;
-      connection_info *info =
-          (connection_info *)malloc(sizeof(connection_info));
+      connection_info *info = (connection_info *)malloc(sizeof(connection_info));
+      if (info == NULL)
+      {
+        printf(RED "NM > Memory allocation failed\n" reset);
+        return NULL;
+      }
+
       info->socket_desc = *new_sock;
 
       strncpy(info->ip_address, ip_buffer, INET_ADDRSTRLEN);

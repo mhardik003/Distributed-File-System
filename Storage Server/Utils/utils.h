@@ -36,18 +36,6 @@ void getSelectedPaths(char *paths, char *selectedPaths);
 #define CYN "\e[0;36m"
 #define reset "\e[0m"
 
-// #define SERVER_PORT 8081
-
-extern int START_PORT;
-
-
-
-// extern int SS_NM_PORT;
-
-// extern int SS_Client_PORT;
-// extern int MAX_PATH_LENGTH;
-// extern int MAX_TOTAL_LENGTH;mihika.txtmihika.txt
-
 typedef struct
 {
     int socket_desc;

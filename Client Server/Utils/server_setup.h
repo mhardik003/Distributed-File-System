@@ -12,6 +12,9 @@
 #define WHT "\e[0;37m"
 #define reset "\e[0m"
 
+#define START_PORT 8000
+#define MAX_PORT 65535
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -22,12 +25,24 @@
 #include <errno.h>
 
 #define SERVER_PORT 8080
-int START_PORT = 8000;
 int CLIENT_NM_PORT;
 int CLIENT_SS_PORT;
 
+// Function Declarations
+void print_DFS_features();
+int findAvailablePort();
+
+int createClientSocket();
+void bindClientSocket(int sock, struct sockaddr_in *cli_addr);
+void sendMessage(int socket, char *message);
+char *readMessage(int sock);
+void connectToServer(int sock, struct sockaddr_in *serv_addr);
+
 void print_DFS_features()
 {
+    /*
+        Function to print the features of the DFS
+    */
     printf(WHT "_______________________________________________________________\n\n");
     printf("\t\t\tWelcome to the DFS!\n");
     printf("_______________________________________________________________\n\n");
@@ -57,11 +72,18 @@ void print_DFS_features()
 
 int findAvailablePort()
 {
+    /*
+        Function to find an available port to bind to
+        Parameters:
+        None
+        Returns:
+        int : the available port
+    */
+
     int test_sock;
     struct sockaddr_in test_addr;
     int port = START_PORT;
-
-    while (port < 65535)
+    while (port < MAX_PORT)
     {
         test_sock = socket(AF_INET, SOCK_STREAM, 0);
         if (test_sock < 0)
@@ -80,20 +102,18 @@ int findAvailablePort()
             if (errno == EADDRINUSE)
             {
                 // Port is already in use, try next port
-                close(test_sock);
                 port++;
             }
             else
             {
-                perror("bind failed in findAvailablePort");
-                close(test_sock);
+                perror("Bind failed in findAvailablePort");
                 // exit(EXIT_FAILURE);
             }
+            close(test_sock);
         }
         else
         {
             // Found an available port
-            START_PORT = port + 1;
             close(test_sock);
             return port;
         }
@@ -101,16 +121,27 @@ int findAvailablePort()
     return -1; // No available port found
 }
 
-int createClientSocket() {
+int createClientSocket()
+{
+    /*
+        Function to create a client socket
+        Parameters:
+        None
+        Returns:
+        int : the socket descriptor
+    */
+
     int sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock == -1) {
+    if (sock == -1)
+    {
         perror("Socket creation failed");
         // exit(EXIT_FAILURE);
     }
 
     int opt = 1;
     // Set SO_REUSEADDR to true
-    if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+    if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
+    {
         perror("setsockopt(SO_REUSEADDR) failed");
         close(sock);
         // exit(EXIT_FAILURE);
@@ -119,12 +150,19 @@ int createClientSocket() {
     return sock;
 }
 
-
 void bindClientSocket(int sock, struct sockaddr_in *cli_addr)
 {
+    /*
+        Function to bind the client socket to the provided address
+        Parameters:
+        int sock : the socket descriptor
+        struct sockaddr_in *cli_addr : the address to bind to
+        Returns:
+        None
+    */
+
     if (bind(sock, (struct sockaddr *)cli_addr, sizeof(*cli_addr)) < 0)
     {
-        printf("Billu bageele\n");
         perror("bind failed");
         close(sock);
         // exit(EXIT_FAILURE);
@@ -133,7 +171,12 @@ void bindClientSocket(int sock, struct sockaddr_in *cli_addr)
 
 void sendMessage(int socket, char *message)
 {
-    send(socket, message, strlen(message), 0);
+    if (send(socket, message, strlen(message), 0) < 0)
+    {
+        perror("Send failed");
+        close(socket);
+        // exit(EXIT_FAILURE);
+    }
     // printf("Message sent\n");
 }
 
@@ -141,12 +184,35 @@ char *readMessage(int sock)
 {
     // char buffer[1024] = {0};
     char *buffer = (char *)malloc(1024);
-    read(sock, buffer, 1024);
+
+    if (!buffer)
+    {
+        printf("Memory allocation failed\n");
+        return NULL;
+        // exit(EXIT_FAILURE);
+    }
+
+    if (read(sock, buffer, 1024) < 0)
+    {
+        free(buffer);
+        perror("Read failed");
+        close(sock);
+        return NULL;
+    }
     return buffer;
 }
 
 void connectToServer(int sock, struct sockaddr_in *serv_addr)
 {
+    /*
+        Function to connect to the server
+        Parameters:
+        int sock : the socket descriptor
+        struct sockaddr_in *serv_addr : the address of the server
+        Returns:
+        None
+
+    */
     if (connect(sock, (struct sockaddr *)serv_addr, sizeof(*serv_addr)) < 0)
     {
         perror("Connection Failed");

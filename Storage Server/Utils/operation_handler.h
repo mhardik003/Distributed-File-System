@@ -28,9 +28,24 @@ void sendACK(char *message);
 void parseInput(char *input, int sock)
 {
     char **tokens = (char **)calloc(1000, sizeof(char *));
+    if (tokens == NULL)
+    {
+        printf(RED "Memory allocation failed!\n" reset);
+        return;
+    }
+
     for (int i = 0; i < 1000; i++)
     {
         tokens[i] = (char *)calloc(100, sizeof(char));
+        if (tokens[i] == NULL)
+        {
+            printf(RED "Memory allocation failed!\n" reset);
+            for (int j = 0; j < i; j++)
+            {
+                free(tokens[j]);
+            }
+            return;
+        }
     }
     int num_tokens = 0;
     char *token = strtok(input, " ");
@@ -41,6 +56,12 @@ void parseInput(char *input, int sock)
     }
 
     operational_handler(tokens, num_tokens, sock);
+
+    // Free memory
+    for (int i = 0; i < 1000; i++)
+    {
+        free(tokens[i]);
+    }
     free(tokens);
     return;
 }
@@ -209,6 +230,11 @@ void deleteFolder(char *path)
             if (strcmp(dir->d_name, ".") != 0 && strcmp(dir->d_name, "..") != 0)
             {
                 char *file_path = (char *)malloc(strlen(path) + strlen(dir->d_name) + 2);
+                if (file_path == NULL)
+                {
+                    printf(RED "Memory allocation failed!\n" reset);
+                    return;
+                }
                 sprintf(file_path, "%s/%s", path, dir->d_name);
 
                 struct stat statbuf;
@@ -277,7 +303,7 @@ void NMreadFile(int sock, char **NM_input_tokens)
     size_t bufferSize = 1024;
     buffer = (char *)malloc(bufferSize);
 
-    if (!buffer)
+    if (buffer == NULL)
     {
         fprintf(stderr, RED "Memory allocation failed!\n" reset);
         fclose(file);
@@ -321,7 +347,7 @@ void readFile(int sock, char **client_input_tokens)
     size_t bufferSize = 512;
     buffer = (char *)malloc(bufferSize);
 
-    if (!buffer)
+    if (buffer == NULL)
     {
         fprintf(stderr, RED "Memory allocation failed!\n" reset);
         fclose(file);
@@ -345,6 +371,12 @@ void readFile(int sock, char **client_input_tokens)
 
     // send ACK to name server
     char *ackMessage = (char *)malloc(1000 * sizeof(char));
+    if (ackMessage == NULL)
+    {
+        printf(RED "Memory allocation failed!\n" reset);
+        return;
+    }
+
     ackMessage[0] = '\0';
     strcat(ackMessage, "ACK\nREAD\n");
     strcat(ackMessage, client_input_tokens[1]);
@@ -362,6 +394,12 @@ void NMwriteFile(int sock, char **client_input_tokens, int num_tokens)
 
     FILE *file;
     char *content = (char *)malloc(1024 * sizeof(char));
+    if (content == NULL)
+    {
+        printf(RED "Memory allocation failed!\n" reset);
+        return;
+    }
+
     memset(content, 0, 1024);
 
     for (int i = 2; i < num_tokens; i++)
@@ -402,6 +440,12 @@ void writeFile(int sock, char **client_input_tokens, int num_tokens)
 
     FILE *file;
     char *content = (char *)malloc(1000 * sizeof(char));
+    if (content == NULL)
+    {
+        printf(RED "Memory allocation failed!\n" reset);
+        return;
+    }
+
     content[0] = '\0';
 
     for (int i = 2; i < num_tokens; i++)
@@ -430,6 +474,12 @@ void writeFile(int sock, char **client_input_tokens, int num_tokens)
 
     // send ACK to naming server
     char *ackMessage = (char *)malloc(1000 * sizeof(char));
+    if (ackMessage == NULL)
+    {
+        printf(RED "Memory allocation failed!\n" reset);
+        return;
+    }
+
     ackMessage[0] = '\0';
     strcat(ackMessage, "ACK\nWRITE\n");
     strcat(ackMessage, client_input_tokens[1]);
@@ -446,6 +496,12 @@ void getInfo(int sock, char **client_input_tokens)
 
     struct stat fileInfo;
     char *message = (char *)malloc(1000 * sizeof(char));
+    if (message == NULL)
+    {
+        printf(RED "Memory allocation failed!\n" reset);
+        return;
+    }
+
     message[0] = '\0';
 
     // Get file status
@@ -457,6 +513,11 @@ void getInfo(int sock, char **client_input_tokens)
 
     strcat(message, "\nFile Size: ");
     char *size = (char *)malloc(100 * sizeof(char));
+    if (size == NULL)
+    {
+        printf(RED "Memory allocation failed!\n" reset);
+        return;
+    }
     sprintf(size, "%ld", fileInfo.st_size);
     strcat(message, size);
     strcat(message, " bytes ");
@@ -492,6 +553,11 @@ void getInfo(int sock, char **client_input_tokens)
     close(sock);
 
     char *ackMessage = (char *)malloc(1000 * sizeof(char));
+    if (ackMessage == NULL)
+    {
+        printf(RED "Memory allocation failed!\n" reset);
+        return;
+    }
     ackMessage[0] = '\0';
     strcat(ackMessage, "ACK\nGETINFO\n");
     strcat(ackMessage, client_input_tokens[1]);
